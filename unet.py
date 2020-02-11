@@ -105,5 +105,19 @@ class UNet(nn.Module):
         x = self.final_conv(u_4)
         return x
     
-net = UNet(num_classes = 151, method = 'interpolate')
-print(net)
+if __name__ == "__main__":
+    dev = torch.device('cuda:0')
+    net = UNet(2).to(dev)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
+
+    for iter_id in range(100):
+        inps = torch.rand(4, 3, 224, 224).to(dev)
+        lbls = torch.randint(low=0, high=2, size=(4, 224, 224)).to(dev)
+
+        outs = net(inps)
+        loss = criterion(outs, lbls)
+        loss.backward()
+        optimizer.step()
+        
+        print(iter_id, loss.item())
