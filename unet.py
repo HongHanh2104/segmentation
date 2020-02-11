@@ -26,7 +26,7 @@ class DecoderBlock(nn.Module):
         super(DecoderBlock, self).__init__()
         self.method = method
         # Using deconv method
-        self.up_transpose = nn.ConvTranspose2D(inputs, outputs, kernel_size = 2, stride = 2)
+        self.up_transpose = nn.ConvTranspose2d(inputs, outputs, kernel_size = 2, stride = 2)
         self.up_conv = nn.Sequential(
             nn.Conv2d(inputs, outputs, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(outputs),
@@ -60,7 +60,7 @@ class MiddleBlock(nn.Module):
             nn.Conv2d(inputs, outputs, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
-            nn.Con2d(outputs, outputs),
+            nn.Conv2d(outputs, outputs, kernel_size = 3, padding = 1),
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
         )
@@ -82,10 +82,10 @@ class UNet(nn.Module):
 
         self.middle_conv = MiddleBlock(512, 1024)
 
-        self.up_conv1 = DecoderBlock(1024, 512, 'interpolate')
-        self.up_conv2 = DecoderBlock(512, 256, 'interpolate')
-        self.up_conv3 = DecoderBlock(256, 128, 'interpolate')
-        self.up_conv4 = DecoderBlock(128, 64, 'interpolate')
+        self.up_conv1 = DecoderBlock(1024, 512, method)
+        self.up_conv2 = DecoderBlock(512, 256, method)
+        self.up_conv3 = DecoderBlock(256, 128, method)
+        self.up_conv4 = DecoderBlock(128, 64, method)
         
         self.final_conv = nn.Conv2d(64, num_classes, kernel_size = 1)
 
@@ -104,3 +104,6 @@ class UNet(nn.Module):
         u_4 = self.up_conv4(d_1, u_3)
         x = self.final_conv(u_4)
         return x
+    
+net = UNet(num_classes = 151, method = 'interpolate')
+print(net)

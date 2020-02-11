@@ -1,32 +1,45 @@
 {
     "model": {
-        "backend":                  "VGG16",
-        "image_size":               224,
-        "labels":                   ["bed", "chair", "table"]
-    },
-
-    "train": {
-        "root_path":                "/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD",
-        "color_img_folder":         "SUNRGBD-train_images",
-        "depth_img_fodler":         "sunrgb_train_depth",
-        "label_img_folder":         "train13labels",
-        "batch_size":               8,
-        "epochs":                   50,
-        "workers":                  4,
-        "print_freq":               200,
-        "learning_rate":            1e-4,
-        "momentum":                  0.9,
-        "weight_decay":             5e-4,
-        "print_every":              10,   
-        "early_stopping_param":     0.001,
-        "early_stopping_patience":  10,       
-        "save_path":                "model/"
+        "name":                         "Unet",
+        "num_class":                    150,
+        "method":                       "interpolate",
+        "args":{
+            "learning_rate":            1e-4,
+            "momentum":                 0.9,
+            "weight_decay":             5e-4
+        }
         
     },
 
-    "test": {
-        "test_dataset_csv":         "database/training/test_labels.csv",
-        "trained_model":                    "model/whole_trained_vgg16_model.pt"
+    "train": {
+        "type":                         "SUNRGBD",                          
+        "path": {
+            "root":                     "/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD",
+            "img_folder":               "SUNRGBD-train_images",
+            "depth_folder":             "sunrgb_train_depth",
+            "label_folder":             "train13labels",
+            "save_path":                "model/"
+        },
+        "args": {
+            "batch_size":               8,
+            "epochs":                   50,
+            "num_workers":              8,
+            "num_iters":                10,
+            "save_period":              10,
+            "early_stop":               10
+        }
+    },
+
+    "validation": {
+        "type":                         "SUNRGBD",
+        "path": {
+            "root":                     "/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD",
+            "img_folder":               "SUNRGBD-test_images"        
+        },
+        "args": {
+            "trained_model":            "model/trained_model.pt",
+            "num_workers":              4
+        }
     }
 
 

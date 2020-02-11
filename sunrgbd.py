@@ -33,7 +33,7 @@ class SUNRGBDDataset(data.Dataset):
 
         color_img = Image.open(os.path.join(self.color_img_path, 'img-' + img_id) + '.jpg').convert('RGB')
         color_img_tf = tvtf.Compose([
-            tvtf.Resize((224, 224)),
+            #tvtf.Resize((224, 224)),
             tvtf.ToTensor()
         ])
         color_img = color_img_tf(color_img)
@@ -42,9 +42,7 @@ class SUNRGBDDataset(data.Dataset):
         label_img_tf = tvtf.Compose([
         ])
         label_img = label_img_tf(label_img)
-        label_img = tvtf.Compose([
-            torch.Tensor(np.array(label_img)).long()
-        ])  
+        label_img = torch.Tensor(np.array(label_img)).long()
 
         depth_img = Image.open(os.path.join(self.depth_img_path, str(int(img_id))) + '.png')
         depth_img_tf = tvtf.Compose([
@@ -62,12 +60,10 @@ dataset = SUNRGBDDataset(root_path = '/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY
                 color_img_folder = 'SUNRGBD-train_images',
                 depth_img_folder = 'sunrgb_train_depth/sunrgbd_train_depth',
                 label_img_folder = 'train13labels')
-dataloader = data.DataLoader(dataset, batch_size=16)
+dataloader = data.DataLoader(dataset, batch_size = 2)
 print(dataloader)
 
-
-'''
-from vgg import VGG16Feature
+from unet import UNet
 from torch import nn
 learning_rate = 0.1
 momentum = 0.99
@@ -75,13 +71,14 @@ weight_decay = 0.01
 
 device = torch.device('cpu')
 
-net = VGG16Feature().to(device)
+net = UNet(num_classes = 15, method = 'interpolate').to(device)
 print(net)
 
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(net.parameters(), lr = learning_rate, momentum = momentum, weight_decay = weight_decay)
 
 num_iters = 10
+print(num_iters)
 for iter_idx in range(num_iters):
     for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
         color_img = color_img.to(device)
@@ -106,4 +103,3 @@ for iter_idx in range(num_iters):
 # a = [5, 7, 2, 3]
 # for x in a: print(x) => 5 7 2 3
 # for i, x in enumerate(a): print(i, x) => (0, 5) (1, 7) (2, 2) (3, 3)
-'''
