@@ -98,10 +98,10 @@ class UNet(nn.Module):
         
         mid = self.middle_conv(x)
         
-        u_1 = self.up_conv1(d_4, mid)
-        u_2 = self.up_conv2(d_3, u_1)
-        u_3 = self.up_conv3(d_2, u_2)
-        u_4 = self.up_conv4(d_1, u_3)
+        u_1 = self.up_conv1(mid, d_4)
+        u_2 = self.up_conv2(u_1, d_3)
+        u_3 = self.up_conv3(u_2, d_2)
+        u_4 = self.up_conv4(u_3, d_1)
         x = self.final_conv(u_4)
         return x
     
