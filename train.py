@@ -10,6 +10,7 @@ from tqdm import tqdm
 from torchnet import meter 
 from trainer import Trainer
 
+import sys
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -41,7 +42,7 @@ def train(config):
                                     img_folder,
                                     depth_folder,
                                     label_folder)
-    training_loader = DataLoader(training_set, batch_size = 4)
+    training_loader = DataLoader(training_set, batch_size=sys.argv[1])
 
     # testing_set = SUNRGBDDataset(root_path = root_path.replace("train", "test"),
     #                             color_img_folder = color_img_folder.replace("train", "test"),
@@ -71,26 +72,37 @@ def train(config):
 if __name__ == "__main__":
     dev = torch.device('cuda:0')
     net = UNet(13, 'interpolate').to(dev)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+    optimizer = torch.optim.Adam(net.parameters())
 
-    num_iters = 101
+    num_iters = 100
 
     dataset = SUNRGBDDataset(root_path = 'data',
                     color_img_folder = 'SUNRGBD-train_images',
                     depth_img_folder = 'sunrgbd_train_depth',
                     label_img_folder = 'train13labels')
-    dataloader = data.DataLoader(dataset, batch_size=1)
+    dataloader = data.DataLoader(dataset, batch_size=int(sys.argv[1]))
 
+    min_loss = 1000000
+    loss_log_step = 100
     for iter_idx in range(num_iters):
-        for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
+        print('Iter #{}: '.format(iter_idx))
+        running_loss = 0.0
+        total_loss = 0.0
+        for batch_idx, (color_img, depth_img, label_img) in enumerate(dataloader):
             inps = color_img.to(dev)
             lbls = label_img.to(dev)
-
+            optimizer.zero_grad()
             outs = net(inps)
             loss = criterion(outs, lbls)
             loss.backward()
             optimizer.step()
-            
-            print(iter_idx, loss.item())
-        
+
+            total_loss += loss.item() / len(dataloader)
+            running_loss += loss.item() / loss_log_step
+            if batch_idx % loss_log_step == 0:
+                print(running_loss)
+                running_loss = 0.0
+        if total_loss < min_loss:
+            torch.save(net.state_dict(), 'weights/save.pth')
+            min_loss = running_loss
