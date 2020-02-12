@@ -133,7 +133,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
-    num_iters = 102
+    num_iters = 100
 
     dataset = SUNRGBDDataset(root_path = 'data',
                     color_img_folder = 'SUNRGBD-train_images',
