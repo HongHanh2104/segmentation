@@ -7,63 +7,10 @@ from torch.utils import data
 from sunrgbd import SUNRGBDDataset
 from unet import UNet
 from tqdm import tqdm
+from torchnet import meter 
+from trainer import Trainer
+
 import sys
-
-class Trainer():
-    def __init__(self, device, 
-                    config, 
-                    net, 
-                    criterion, 
-                    optimier, 
-                    train_dataloader,
-                    test_dataloader):
-        super(Trainer, self).__init__()
-        self.device = device
-        self.net = net
-        self.criterion = criterion
-        self.optimizer = optimier
-        self.train_dataloader = train_dataloader
-        self.test_dataloader = test_dataloader
-
-        # Get arguments
-        self.batch_size = config["train"]["args"]["batch_size"]
-        self.epochs = config["train"]["args"]["epochs"]
-        self.num_workers = config["train"]["args"]["um_workers"]
-        self.num_iters = config["train"]["args"]["num_iters"]
-        self.save_period = config["train"]["args"]["save_period"]
-        self.early_stop = config["train"]["args"]["early_stop"]
-
-    def train_epoch(self, epoch):
-        self.net.train()
-        print("Training ........")
-        progress_bar = tqdm(self.dataloader)
-        for i, (color_imgs, depth_imgs, label_imgs) in enumerate(progress_bar):
-            color_imgs = color_imgs.to(self.device)
-            depth_imgs = depth_imgs.to(self.device)
-            label_imgs = label_imgs.to(self.device)
-
-            self.optimizer.zero_grad()
-            outs = self.net(color_imgs)
-            loss = self.criterion(outs, color_imgs)
-            # Calculate gradients
-            loss.backward()
-            # Performing backpropagation
-            self.optimizer.step()
-            self.total_loss.update(loss.item())
-    
-    def val_epoch(self, epoch):
-        return 0
-    
-    def train(self):
-        for epoch in range(self.epochs):
-            print('Epoch {:>3d}'.format(epoch))
-            print('-----------------------------------')
-
-            self.train_epoch(epoch = epoch)
-            
-            if epoch % 1 == 0:
-                self.val_epoch(epoch)
-                print('-------------------------------')
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -90,7 +37,7 @@ def train(config):
     label_folder = config["train"]["path"]["label_folder"]
     save_path = config["train"]["path"]["save_path"]
 
-    # Load datasets
+    # 1: Load datasets
     training_set = SUNRGBDDataset(root_path,
                                     img_folder,
                                     depth_folder,
@@ -104,28 +51,23 @@ def train(config):
     
     # testing_loader = DataLoader(testing_set)
 
-    # Define network
+    # 2: Define network
     net = UNet(num_class, method).to(device)
     print(net)
-    # Define loss
+    # 3: Define loss
     criterion = nn.CrossEntropyLoss()
-    # Define Optim
+    # 4: Define Optimizer
     optimizer = torch.optim.SGD(net.parameters(), lr = learning_rate, momentum = momentum, weight_decay = weight_decay)
 
-    # Create trainer
+    # 5: Create trainer
     trainer = Trainer(device = device,
                         config = config,
                         net = net,
                         criterion = criterion,
                         optimier = optimizer,
                         dataloader = DataLoader)
-
-
-
-    num_iters = 10
-    for iter_idx in range(num_iters):
-        for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
-            outs = net(color_img)
+    # 6: Start to train
+    trainer.train()
 
 if __name__ == "__main__":
     dev = torch.device('cuda:0')
