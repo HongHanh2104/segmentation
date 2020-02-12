@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
             total_loss += loss.item() / len(dataloader)
             running_loss += loss.item() / loss_log_step
-            if batch_idx % loss_log_step == 0:
+            if (batch_idx + 1) % loss_log_step == 0:
                 print(running_loss)
                 running_loss = 0.0
         if total_loss < min_loss:
