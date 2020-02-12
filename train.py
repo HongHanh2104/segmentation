@@ -130,7 +130,7 @@ def train(config):
 if __name__ == "__main__":
     dev = torch.device('cuda:0')
     net = UNet(13, 'interpolate').to(dev)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=-1, size_average=True)
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
     num_iters = 100
@@ -145,8 +145,6 @@ if __name__ == "__main__":
         for batch_idx, (color_img, depth_img, label_img) in enumerate(dataloader):
             inps = color_img.to(dev)
             lbls = label_img.to(dev)
-
-            print(lbls)
 
             outs = net(inps)
             loss = criterion(outs, lbls)
