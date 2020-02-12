@@ -3,6 +3,7 @@ import json
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.utils import data
 from sunrgbd import SUNRGBDDataset
 from unet import UNet
 from tqdm import tqdm
@@ -125,3 +126,29 @@ def train(config):
     for iter_idx in range(num_iters):
         for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
             outs = net(color_img)
+
+if __name__ == "__main__":
+    dev = torch.device('cuda:0')
+    net = UNet(13, 'interpolate').to(dev)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
+
+    num_iters = 100
+
+    dataset = SUNRGBDDataset(root_path = 'data',
+                    color_img_folder = 'SUNRGBD-train_images',
+                    depth_img_folder = 'sunrgbd_train_depth',
+                    label_img_folder = 'train13labels')
+    dataloader = data.DataLoader(dataset, batch_size=1)
+
+    for iter_idx in range(num_iters):
+        for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
+            inps = color_img.to(dev)
+            lbls = label_img.to(dev)
+
+            outs = net(inps)
+            loss = criterion(outs, lbls)
+            loss.backward()
+            optimizer.step()
+            
+            print(iter_idx, loss.item())

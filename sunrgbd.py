@@ -56,50 +56,18 @@ class SUNRGBDDataset(data.Dataset):
     def __len__(self):
         return len(self.img_ids)
 
-dataset = SUNRGBDDataset(root_path = '/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD',
-                color_img_folder = 'SUNRGBD-train_images',
-                depth_img_folder = 'sunrgb_train_depth/sunrgbd_train_depth',
-                label_img_folder = 'train13labels')
-dataloader = data.DataLoader(dataset, batch_size = 2)
-print(dataloader)
-
-from unet import UNet
-from torch import nn
-learning_rate = 0.1
-momentum = 0.99
-weight_decay = 0.01
-
-device = torch.device('cpu')
-
-net = UNet(num_classes = 15, method = 'interpolate').to(device)
-print(net)
-
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(net.parameters(), lr = learning_rate, momentum = momentum, weight_decay = weight_decay)
-
-num_iters = 10
-print(num_iters)
-for iter_idx in range(num_iters):
-    for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
-        color_img = color_img.to(device)
-        outs = net(color_img)
-        print(batch_idx, color_img.shape, outs.shape)
-
-                
-# for i, (color_img, depth_img, label_img) in enumerate(dataloader):
-#     # (C, W, H) x 4 => (B, C, W, H): tensor => network
-
-#     print(color_img.shape)
-#     break
-#     plt.subplot(3, 1, 1)
-#     plt.imshow(color_img.permute(1, 2, 0))
-#     plt.subplot(3, 1, 2)
-#     plt.imshow(label_img)
-#     plt.subplot(3, 1, 3)
-#     plt.imshow(depth_img.squeeze(0))
-#     plt.show()
-#     break
-
-# a = [5, 7, 2, 3]
-# for x in a: print(x) => 5 7 2 3
-# for i, x in enumerate(a): print(i, x) => (0, 5) (1, 7) (2, 2) (3, 3)
+if __name__ == "__main__":
+    dataset = SUNRGBDDataset(root_path = 'data',
+                    color_img_folder = 'SUNRGBD-train_images',
+                    depth_img_folder = 'sunrgbd_train_depth',
+                    label_img_folder = 'train13labels')
+    
+    for i, (color_img, depth_img, label_img) in enumerate(dataset):
+        plt.subplot(3, 1, 1)
+        plt.imshow(color_img.permute(1, 2, 0))
+        plt.subplot(3, 1, 2)
+        plt.imshow(label_img)
+        plt.subplot(3, 1, 3)
+        plt.imshow(depth_img.squeeze(0))
+        plt.show()
+        # break
