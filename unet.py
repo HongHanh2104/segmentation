@@ -109,7 +109,7 @@ if __name__ == "__main__":
     dev = torch.device('cuda:0')
     net = UNet(2, '').to(dev)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
     for iter_id in range(100):
         inps = torch.rand(4, 3, 224, 224).to(dev)
