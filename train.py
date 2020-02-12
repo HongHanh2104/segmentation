@@ -130,8 +130,8 @@ def train(config):
 if __name__ == "__main__":
     dev = torch.device('cuda:0')
     net = UNet(13, 'interpolate').to(dev)
-    criterion = nn.CrossEntropyLoss(ignore_index=-1, size_average=True)
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+    optimizer = torch.optim.Adam(net.parameters())
 
     num_iters = 100
 
@@ -141,14 +141,19 @@ if __name__ == "__main__":
                     label_img_folder = 'train13labels')
     dataloader = data.DataLoader(dataset, batch_size=1)
 
+    min_loss = 1000000
     for iter_idx in range(num_iters):
+        print('Iter #{}: '.format(iter_idx))
+        running_loss = 0.0
         for batch_idx, (color_img, depth_img, label_img) in enumerate(dataloader):
             inps = color_img.to(dev)
             lbls = label_img.to(dev)
 
+            optimizer.zero_grad()
             outs = net(inps)
             loss = criterion(outs, lbls)
             loss.backward()
             optimizer.step()
-            
-            print(iter_idx, loss.item())
+            running_loss += loss.item() / len(dataloader)
+        if running_loss < min_loss:
+            torch.save(net.state_dict(), 'weights/save.pth')
