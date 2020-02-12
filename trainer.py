@@ -33,7 +33,7 @@ class Trainer():
         self.net.train()
         print("Training ........")
         progress_bar = tqdm(dataloader)
-        for i, (color_imgs, label_imgs) in enumerate(progress_bar):
+        for i, (color_imgs, *label_imgs) in enumerate(progress_bar):
             # 1: Load img_inputs and labels 
             color_imgs = color_imgs.to(self.device)
             depth_imgs = label_imgs[0].to(self.device)
