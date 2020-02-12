@@ -157,3 +157,4 @@ if __name__ == "__main__":
             running_loss += loss.item() / len(dataloader)
         if running_loss < min_loss:
             torch.save(net.state_dict(), 'weights/save.pth')
+            min_loss = running_loss
