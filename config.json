@@ -1,7 +1,7 @@
 {
     "model": {
         "name":                         "Unet",
-        "num_class":                    150,
+        "num_class":                    13,
         "method":                       "interpolate",
         "args":{
             "learning_rate":            1e-4,
@@ -16,7 +16,7 @@
         "path": {
             "root":                     "/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD",
             "img_folder":               "SUNRGBD-train_images",
-            "depth_folder":             "sunrgb_train_depth",
+            "depth_folder":             "sunrgb_train_depth/sunrgbd_train_depth",
             "label_folder":             "train13labels",
             "save_path":                "model/"
         },
