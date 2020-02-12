@@ -7,7 +7,7 @@ from torch.utils import data
 from sunrgbd import SUNRGBDDataset
 from unet import UNet
 from tqdm import tqdm
-
+import sys
 
 class Trainer():
     def __init__(self, device, 
@@ -95,7 +95,7 @@ def train(config):
                                     img_folder,
                                     depth_folder,
                                     label_folder)
-    training_loader = DataLoader(training_set, batch_size = 4)
+    training_loader = DataLoader(training_set, batch_size=sys.argv[1])
 
     # testing_set = SUNRGBDDataset(root_path = root_path.replace("train", "test"),
     #                             color_img_folder = color_img_folder.replace("train", "test"),
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                     color_img_folder = 'SUNRGBD-train_images',
                     depth_img_folder = 'sunrgbd_train_depth',
                     label_img_folder = 'train13labels')
-    dataloader = data.DataLoader(dataset, batch_size=1)
+    dataloader = data.DataLoader(dataset, batch_size=4)
 
     min_loss = 1000000
     for iter_idx in range(num_iters):
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         for batch_idx, (color_img, depth_img, label_img) in enumerate(dataloader):
             inps = color_img.to(dev)
             lbls = label_img.to(dev)
-
+            print(inps.shape)
             optimizer.zero_grad()
             outs = net(inps)
             loss = criterion(outs, lbls)
