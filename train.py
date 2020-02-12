@@ -139,22 +139,28 @@ if __name__ == "__main__":
                     color_img_folder = 'SUNRGBD-train_images',
                     depth_img_folder = 'sunrgbd_train_depth',
                     label_img_folder = 'train13labels')
-    dataloader = data.DataLoader(dataset, batch_size=4)
+    dataloader = data.DataLoader(dataset, batch_size=int(sys.argv[1]))
 
     min_loss = 1000000
+    loss_log_step = 100
     for iter_idx in range(num_iters):
         print('Iter #{}: '.format(iter_idx))
         running_loss = 0.0
+        total_loss = 0.0
         for batch_idx, (color_img, depth_img, label_img) in enumerate(dataloader):
             inps = color_img.to(dev)
             lbls = label_img.to(dev)
-            print(inps.shape)
             optimizer.zero_grad()
             outs = net(inps)
             loss = criterion(outs, lbls)
             loss.backward()
             optimizer.step()
-            running_loss += loss.item() / len(dataloader)
-        if running_loss < min_loss:
+
+            total_loss += loss.item() / len(dataloader)
+            running_loss += loss.item() / loss_log_step
+            if batch_idx % loss_log_step == 0:
+                print(running_loss)
+                running_loss = 0.0
+        if total_loss < min_loss:
             torch.save(net.state_dict(), 'weights/save.pth')
             min_loss = running_loss
