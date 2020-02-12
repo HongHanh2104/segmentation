@@ -133,7 +133,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
-    num_iters = 100
+    num_iters = 102
 
     dataset = SUNRGBDDataset(root_path = 'data',
                     color_img_folder = 'SUNRGBD-train_images',
@@ -142,9 +142,11 @@ if __name__ == "__main__":
     dataloader = data.DataLoader(dataset, batch_size=1)
 
     for iter_idx in range(num_iters):
-        for batch_idx, (color_img, label_img, depth_img) in enumerate(dataloader):
+        for batch_idx, (color_img, depth_img, label_img) in enumerate(dataloader):
             inps = color_img.to(dev)
             lbls = label_img.to(dev)
+
+            print(lbls)
 
             outs = net(inps)
             loss = criterion(outs, lbls)
