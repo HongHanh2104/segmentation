@@ -106,14 +106,14 @@ class UNet(nn.Module):
         return x
     
 if __name__ == "__main__":
-    dev = torch.device('cuda:0')
+    dev = torch.device('cpu')
     net = UNet(2, '').to(dev)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
     for iter_id in range(100):
-        inps = torch.rand(4, 3, 224, 224).to(dev)
-        lbls = torch.randint(low=0, high=2, size=(4, 224, 224)).to(dev)
+        inps = torch.rand(4, 3, 100, 100).to(dev)
+        lbls = torch.randint(low = 0, high = 2, size = (4, 100, 100)).to(dev)
 
         outs = net(inps)
         loss = criterion(outs, lbls)
