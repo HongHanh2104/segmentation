@@ -96,7 +96,7 @@ class UNet(nn.Module):
         d_3, x = self.down_conv3(x)
         d_4, x = self.down_conv4(x)
         
-        mid = self.middle_conv(x)
+        mid, _ = self.middle_conv(x)
         
         u_1 = self.up_conv1(mid, d_4)
         u_2 = self.up_conv2(u_1, d_3)
