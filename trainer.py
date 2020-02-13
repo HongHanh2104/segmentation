@@ -41,12 +41,12 @@ class Trainer():
         }
 
         if val_loss < self.best_loss:
-            print("Loss is improved from %.5f to %.5f. Weights are saving ......" % (self.best_loss, val_loss))
+            print("Loss is improved from %.5f to %.5f. Saving weights ......" % (self.best_loss, val_loss))
             torch.save(data, os.path.join(self.log_path, "{}_best_loss.pth".format(epoch)))
             # Update best_loss
             self.best_loss = val_loss
         else:
-            print("Loss is not improved from %.6f." % (best_loss))
+            print("Loss is not improved from %.6f." % (self.best_loss))
 
         # Save the model
         print("Saving curent model ....")
@@ -85,6 +85,7 @@ class Trainer():
     def val_epoch(self, epoch, dataloader):
         running_loss = meter.AverageValueMeter()
         self.net.eval()
+        print("Validating ........")
         progress_bar = tqdm(dataloader)
         for i, (color_imgs, *label_imgs) in enumerate(progress_bar):
             # 1: Load inputs and labels
@@ -107,26 +108,27 @@ class Trainer():
 
         self.val_loss.append(avg_loss)
     
-    def train(self, train_dataloader, test_dataloader):
+    def train(self, train_dataloader, val_dataloader):
         val_loss = 0
         for epoch in range(self.nepochs):
-            print('Epoch {:>3d}'.format(epoch))
+            print('\nEpoch {:>3d}'.format(epoch))
             print('-----------------------------------')
 
             # 1: Training phase
             self.train_epoch(epoch=epoch, dataloader=train_dataloader)
             
             # 2: Testing phase
-            if epoch % 10 == 0:
-                self.val_epoch(epoch, dataloader=test_dataloader)
+            if (epoch + 1) % 5 == 0:
+                self.val_epoch(epoch, dataloader=val_dataloader)
                 print('-------------------------------')
-            # Get latest val loss here 
-            val_loss = self.val_loss[-1]
              
             # 3: Learning rate scheduling
 
             # 4: Saving checkpoints
-            if epoch % self.log_step == 0:
+            if (epoch + 1) % 10 == 0:
+                # Get latest val loss here 
+                val_loss = self.val_loss[-1]
+
                 self.save_checkpoint(epoch, val_loss)
 
             # 5: Visualizing some examples

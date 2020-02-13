@@ -15,7 +15,7 @@ import sys
 def train(config):
     assert config is not None, "Do not have config file!"
 
-    device = torch.device('cuda:{}'.format(config['gpus']) if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:{}'.format(config['gpus']) if config.get('gpus', False) and torch.cuda.is_available() else 'cpu')
 
     # Get model information
     model_type = config["model"]["name"]
@@ -38,17 +38,17 @@ def train(config):
     save_path = config["train"]["path"]["save_path"]
 
     # 1: Load datasets
-    training_set = SUNRGBDDataset(root_path,
+    train_dataset = SUNRGBDDataset(root_path,
                                     img_folder,
                                     depth_folder,
                                     label_folder)
-    training_loader = DataLoader(training_set, batch_size=1)
+    train_dataloader = DataLoader(train_dataset, batch_size=1)
 
-    testing_set = SUNRGBDDataset(root_path,
+    val_dataset = SUNRGBDDataset(root_path,
                                     img_folder,
                                     depth_folder,
                                     label_folder)
-    testing_loader = DataLoader(testing_set, batch_size=1)
+    val_dataloader = DataLoader(val_dataset, batch_size=1)
 
     # 2: Define network
     net = UNet(num_class, method).to(device)
@@ -68,7 +68,7 @@ def train(config):
                         criterion = criterion,
                         optimier = optimizer)
     # 6: Start to train
-    trainer.train(train_dataloader=training_loader, test_dataloader=testing_loader)
+    trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
 
 if __name__ == "__main__":
     config_path = 'config.json'

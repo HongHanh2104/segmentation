@@ -1,4 +1,6 @@
 {
+    "gpus": null,
+
     "model": {
         "name":                         "Unet",
         "num_class":                    13,
@@ -14,9 +16,9 @@
     "train": {
         "type":                         "SUNRGBD",                          
         "path": {
-            "root":                     "/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD",
+            "root":                     "data/SUN-RGBD",
             "img_folder":               "SUNRGBD-train_images",
-            "depth_folder":             "sunrgb_train_depth/sunrgbd_train_depth",
+            "depth_folder":             "sunrgbd_train_depth",
             "label_folder":             "train13labels",
             "save_path":                "model/"
         },
@@ -38,7 +40,7 @@
     "validation": {
         "type":                         "SUNRGBD",
         "path": {
-            "root":                     "/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD",
+            "root":                     "data/SUN-RGBD",
             "img_folder":               "SUNRGBD-test_images"        
         },
         "args": {
