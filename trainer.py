@@ -6,6 +6,7 @@ from tqdm import tqdm
 import numpy as np
 from toymodel import ToyModel
 import os
+import json
 
 class Trainer():
     def __init__(self, device, 
@@ -40,7 +41,7 @@ class Trainer():
         }
 
         if val_loss < self.best_loss:
-            print("Loss is improved from %.5f to %.5f. Weights are saving ......" % (best_loss, val_loss))
+            print("Loss is improved from %.5f to %.5f. Weights are saving ......" % (self.best_loss, val_loss))
             torch.save(data, os.path.join(self.log_path, "{}_best_loss.pth".format(epoch)))
             # Update best_loss
             self.best_loss = val_loss
@@ -85,7 +86,7 @@ class Trainer():
         running_loss = meter.AverageValueMeter()
         self.net.eval()
         progress_bar = tqdm(dataloader)
-        for i, (color_imgs, **label_imgs) in enumerate(progress_bar):
+        for i, (color_imgs, *label_imgs) in enumerate(progress_bar):
             # 1: Load inputs and labels
             color_imgs = color_imgs.to(self.device)
             depth_imgs = label_imgs[0].to(self.device)
@@ -132,6 +133,7 @@ class Trainer():
 
 if __name__ == "__main__":
     device = torch.device('cpu')
+    '''
     config = {
         "train": {
             "args": {
@@ -139,6 +141,9 @@ if __name__ == "__main__":
             }
         }
     }
+    '''
+    path = 'config.json'
+    config = json.load(open(path))
     net = ToyModel(64, 20)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters())

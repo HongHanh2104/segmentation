@@ -31,7 +31,7 @@
     },
 
     "log":{
-        "path":                         "logger/",
+        "path":                         "weights/",
         "log_per_iter":                 20
     },
 
