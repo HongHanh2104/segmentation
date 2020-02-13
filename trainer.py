@@ -38,18 +38,22 @@ class Trainer():
         }
 
         if val_loss < best_loss:
-            print("Loss is improved from %.5f to %.5f. Weights is saving ......".format(best_loss, val_loss))
+            print("Loss is improved from %.5f to %.5f. Weights are saving ......" % (best_loss, val_loss))
             torch.save(data, os.path.join(self.log_path, "{}_best_loss.pth".format(epoch)))
             # Update best_loss
             best_loss = val_loss
         else:
-            print("Loss is not improved from %.6f.".format(best_loss))
-        return 0
+            print("Loss is not improved from %.6f." % (best_loss))
+
+        # Save the model
+        print("Saving curent model ....")
+        torch.save(data, os.path.join(self.log_path, "{}.pth".format(epoch)))
+
 
     def train_epoch(self, epoch, dataloader): 
         # 0: Record loss during training process 
         running_loss = meter.AverageValueMeter()
-
+        train_loss = []
         self.net.train()
         print("Training ........")
         progress_bar = tqdm(dataloader)
@@ -70,6 +74,9 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
+            
+            # Update train loss
+            train_loss.append(loss.item()) 
 
     
     def val_epoch(self, epoch):
@@ -77,6 +84,8 @@ class Trainer():
         return 0
     
     def train(self, train_dataloader, test_dataloader):
+        best_loss = np.inf
+        val_loss = 0
         for epoch in range(self.nepochs):
             print('Epoch {:>3d}'.format(epoch))
             print('-----------------------------------')
@@ -88,9 +97,13 @@ class Trainer():
             if epoch % 1 == 0:
                 self.val_epoch(epoch)
                 print('-------------------------------')
+            # Get latest val loss here 
+             
             # 3: Learning rate scheduling
 
             # 4: Saving checkpoints
+            if epoch % self.log_step == 0:
+                self.save_checkpoint(epoch, best_loss, val_loss)
 
             # 5: Visualizing some examples
 
