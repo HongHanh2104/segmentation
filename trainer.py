@@ -3,8 +3,9 @@ from torch import nn, optim
 from torch.utils import data
 from torchnet import meter
 from tqdm import tqdm
-
+import numpy as np
 from toymodel import ToyModel
+import os
 
 class Trainer():
     def __init__(self, device, 
@@ -25,6 +26,25 @@ class Trainer():
         # self.num_iters = config["train"]["args"]["num_iters"]
         # self.save_period = config["train"]["args"]["save_period"]
         # self.early_stop = config["train"]["args"]["early_stop"]
+
+        self.log_step = config["log"]["log_per_iter"]
+        self.log_path = config["log"]["path"]
+
+    def save_checkpoint(self, epoch, best_loss, val_loss):
+        #best_loss = np.inf
+        data = {
+            "model_state_dict": self.net.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict()
+        }
+
+        if val_loss < best_loss:
+            print("Loss is improved from %.5f to %.5f. Weights is saving ......".format(best_loss, val_loss))
+            torch.save(data, os.path.join(self.log_path, "{}_best_loss.pth".format(epoch)))
+            # Update best_loss
+            best_loss = val_loss
+        else:
+            print("Loss is not improved from %.6f.".format(best_loss))
+        return 0
 
     def train_epoch(self, epoch, dataloader): 
         # 0: Record loss during training process 
@@ -50,8 +70,10 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
+
     
     def val_epoch(self, epoch):
+        
         return 0
     
     def train(self, train_dataloader, test_dataloader):

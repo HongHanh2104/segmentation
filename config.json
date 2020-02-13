@@ -30,6 +30,11 @@
         }
     },
 
+    "log":{
+        "path":                         "logger/",
+        "log_per_iter":                 20
+    },
+
     "validation": {
         "type":                         "SUNRGBD",
         "path": {
