@@ -29,19 +29,21 @@ class Trainer():
 
         self.log_step = config["log"]["log_per_iter"]
         self.log_path = config["log"]["path"]
+        self.best_loss = np.inf
+        self.val_loss = []
 
-    def save_checkpoint(self, epoch, best_loss, val_loss):
+    def save_checkpoint(self, epoch, val_loss):
         #best_loss = np.inf
         data = {
             "model_state_dict": self.net.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict()
         }
 
-        if val_loss < best_loss:
+        if val_loss < self.best_loss:
             print("Loss is improved from %.5f to %.5f. Weights are saving ......" % (best_loss, val_loss))
             torch.save(data, os.path.join(self.log_path, "{}_best_loss.pth".format(epoch)))
             # Update best_loss
-            best_loss = val_loss
+            self.best_loss = val_loss
         else:
             print("Loss is not improved from %.6f." % (best_loss))
 
@@ -79,12 +81,32 @@ class Trainer():
             train_loss.append(loss.item()) 
 
     
-    def val_epoch(self, epoch):
+    def val_epoch(self, epoch, dataloader):
+        running_loss = meter.AverageValueMeter()
+        self.net.eval()
+        progress_bar = tqdm(dataloader)
+        for i, (color_imgs, **label_imgs) in enumerate(progress_bar):
+            # 1: Load inputs and labels
+            color_imgs = color_imgs.to(self.device)
+            depth_imgs = label_imgs[0].to(self.device)
+            label_imgs = label_imgs[1].to(self.device)
+
+            # 2: Get network outputs
+            outs = self.net(color_imgs)
+
+            # 3: Calculate the loss 
+            loss = self.criterion(outs, label_imgs)
+
+            # 4: Update loss
+            running_loss.add(loss.item())
         
-        return 0
+        # 5: Get average loss 
+        avg_loss = running_loss.value()[0]
+        print("Average Loss: ", avg_loss)
+
+        self.val_loss.append(avg_loss)
     
     def train(self, train_dataloader, test_dataloader):
-        best_loss = np.inf
         val_loss = 0
         for epoch in range(self.nepochs):
             print('Epoch {:>3d}'.format(epoch))
@@ -94,16 +116,17 @@ class Trainer():
             self.train_epoch(epoch=epoch, dataloader=train_dataloader)
             
             # 2: Testing phase
-            if epoch % 1 == 0:
-                self.val_epoch(epoch)
+            if epoch % 10 == 0:
+                self.val_epoch(epoch, dataloader=test_dataloader)
                 print('-------------------------------')
             # Get latest val loss here 
+            val_loss = self.val_loss[-1]
              
             # 3: Learning rate scheduling
 
             # 4: Saving checkpoints
             if epoch % self.log_step == 0:
-                self.save_checkpoint(epoch, best_loss, val_loss)
+                self.save_checkpoint(epoch, val_loss)
 
             # 5: Visualizing some examples
 
