@@ -9,7 +9,7 @@ class Metrics():
 
     def IoU(self, output, target, nclasses):
         #print(output)
-        ious = []
+        ious = {}
         _, prediction = torch.max(output, dim = 1)
         for c in range(nclasses):
             pred_c = prediction == c
@@ -21,11 +21,10 @@ class Metrics():
                 continue
             '''
             #print(intersection.float(), union.float(), intersection.float() / union.float())
-            ious.append(intersection.float() + 1e-6 / union.float() + 1e-6)
-            print(ious)
-            
-        miou = np.mean(ious)
-        return miou
+            iou = (intersection.float() + 1e-6) / (union.float() + 1e-6)
+            ious[c] = iou.item()
+        # miou = np.mean(ious)
+        return ious
     
 
 
