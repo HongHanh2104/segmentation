@@ -83,7 +83,7 @@ class Trainer():
             # 8: Update metric
             #outs = outs.detach().cpu()
             #label_imgs = label_imgs.detach().cpu()
-            metric_value = loss_metric.IoU(outs, label_imgs, 151)
+            metric_value = loss_metric.IoU(outs, label_imgs, 13)
             print(metric_value)
             # Update train loss
             train_loss.append(loss.item()) 
@@ -113,7 +113,7 @@ class Trainer():
             # 5: Update metric
             #outs = outs.detach().cpu()
             #label_imgs = label_imgs.detach().cpu()
-            metric_value = val_metric.IoU(outs, label_imgs, 151)
+            metric_value = val_metric.IoU(outs, label_imgs, 13)
         # 5: Get average loss 
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
