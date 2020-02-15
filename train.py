@@ -9,6 +9,7 @@ from unet import UNet
 from tqdm import tqdm
 from torchnet import meter 
 from trainer import Trainer
+from metrics import Metrics
 
 import sys
 
@@ -60,14 +61,17 @@ def train(config):
                                 lr=learning_rate, 
                                 momentum=momentum, 
                                 weight_decay=weight_decay)
+    # 5: Define metrics
+    metric = Metrics()
 
-    # 5: Create trainer
+    # 6: Create trainer
     trainer = Trainer(device = device,
                         config = config,
                         net = net,
                         criterion = criterion,
-                        optimier = optimizer)
-    # 6: Start to train
+                        optimier = optimizer,
+                        metric = metric)
+    # 7: Start to train
     trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
 
 if __name__ == "__main__":

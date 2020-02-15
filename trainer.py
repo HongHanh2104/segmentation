@@ -13,12 +13,14 @@ class Trainer():
                     config, 
                     net, 
                     criterion, 
-                    optimier):
+                    optimier,
+                    metric):
         super(Trainer, self).__init__()
         self.device = device
         self.net = net
         self.criterion = criterion
         self.optimizer = optimier
+        self.metric = metric
 
         # Get arguments
         # self.batch_size = config["train"]["args"]["batch_size"]
@@ -56,6 +58,7 @@ class Trainer():
     def train_epoch(self, epoch, dataloader): 
         # 0: Record loss during training process 
         running_loss = meter.AverageValueMeter()
+        loss_metric = self.metric
         train_loss = []
         self.net.train()
         print("Training ........")
@@ -77,13 +80,18 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
-            
+            # 8: Update metric
+            #outs = outs.detach().cpu()
+            #label_imgs = label_imgs.detach().cpu()
+            metric_value = loss_metric.IoU(outs, label_imgs, 151)
+            print(metric_value)
             # Update train loss
             train_loss.append(loss.item()) 
 
     
     def val_epoch(self, epoch, dataloader):
         running_loss = meter.AverageValueMeter()
+        val_metric = self.metric
         self.net.eval()
         print("Validating ........")
         progress_bar = tqdm(dataloader)
@@ -102,6 +110,10 @@ class Trainer():
             # 4: Update loss
             running_loss.add(loss.item())
         
+            # 5: Update metric
+            #outs = outs.detach().cpu()
+            #label_imgs = label_imgs.detach().cpu()
+            metric_value = val_metric.IoU(outs, label_imgs, 151)
         # 5: Get average loss 
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
@@ -134,6 +146,7 @@ class Trainer():
             # 5: Visualizing some examples
 
 if __name__ == "__main__":
+    from metrics import Metrics
     device = torch.device('cpu')
     '''
     config = {
@@ -149,8 +162,8 @@ if __name__ == "__main__":
     net = ToyModel(64, 20)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters())
-
-    trainer = Trainer(device, config, net, criterion, optimizer)
+    metric = Metrics()
+    trainer = Trainer(device, config, net, criterion, optimizer, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),
                     torch.randn(size=(100, 100)),
