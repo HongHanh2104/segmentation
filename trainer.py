@@ -83,7 +83,7 @@ class Trainer():
             # 8: Update metric
             #outs = outs.detach().cpu()
             #label_imgs = label_imgs.detach().cpu()
-            metric_value = loss_metric.IoU(outs, label_imgs, 13)
+            metric_value = loss_metric.IoU(outs, label_imgs, 13, -1)
             print(metric_value)
             # Update train loss
             train_loss.append(loss.item()) 
@@ -113,7 +113,7 @@ class Trainer():
             # 5: Update metric
             #outs = outs.detach().cpu()
             #label_imgs = label_imgs.detach().cpu()
-            metric_value = val_metric.IoU(outs, label_imgs, 13)
+            metric_value = val_metric.IoU(outs, label_imgs, 13, -1)
         # 5: Get average loss 
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
@@ -159,21 +159,21 @@ if __name__ == "__main__":
     '''
     path = 'config.json'
     config = json.load(open(path))
-    net = ToyModel(64, 20)
-    criterion = nn.CrossEntropyLoss()
+    net = ToyModel(64, 13)
+    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
     metric = Metrics()
     trainer = Trainer(device, config, net, criterion, optimizer, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),
                     torch.randn(size=(100, 100)),
-                    torch.randint(low=0, high=20, size=(100, 100)).long())
+                    torch.randint(low=-1, high=13, size=(100, 100)).long())
                     for _ in range(99)]
     train_dataloader = data.DataLoader(train_dataset, batch_size=4)
 
     test_dataset = [(torch.randn(size=(3, 100, 100)),
                     torch.randn(size=(100, 100)),
-                    torch.randint(low=0, high=20, size=(100, 100)).long())
+                    torch.randint(low=-1, high=13, size=(100, 100)).long())
                     for _ in range(99)]
     test_dataloader = data.DataLoader(test_dataset, batch_size=4)
 

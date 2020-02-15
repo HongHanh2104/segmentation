@@ -7,10 +7,12 @@ class Metrics():
         #self.output = output
         #self.target = target
 
-    def IoU(self, output, target, nclasses):
+    def IoU(self, output, target, nclasses, ignore_index):
         #print(output)
         ious = {}
         _, prediction = torch.max(output, dim = 1)
+        target_mask = (target == ignore_index).bool()
+        prediction[target_mask] = -1
         for c in range(nclasses):
             pred_c = prediction == c
             target_c = target == c
