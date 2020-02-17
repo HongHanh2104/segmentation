@@ -4,7 +4,6 @@ from torch.utils import data
 from torchnet import meter
 from tqdm import tqdm
 import numpy as np
-from toymodel import ToyModel
 import os
 import json
 
@@ -81,9 +80,9 @@ class Trainer():
             # 7: Update loss 
             running_loss.add(loss.item())
             # 8: Update metric
-            #outs = outs.detach().cpu()
-            #label_imgs = label_imgs.detach().cpu()
-            metric_value = loss_metric.IoU(outs, label_imgs, 13, -1)
+            outs = outs.detach()
+            label_imgs = label_imgs.detach()
+            metric_value = loss_metric.calculate(outs, label_imgs)
             print(metric_value)
             # Update train loss
             train_loss.append(loss.item()) 
@@ -146,7 +145,9 @@ class Trainer():
             # 5: Visualizing some examples
 
 if __name__ == "__main__":
-    from metrics import Metrics
+    from metrics import IoU
+    from toymodel import ToyModel
+
     device = torch.device('cpu')
     '''
     config = {
@@ -162,7 +163,7 @@ if __name__ == "__main__":
     net = ToyModel(64, 13)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
-    metric = Metrics()
+    metric = IoU(13, -1)
     trainer = Trainer(device, config, net, criterion, optimizer, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),
