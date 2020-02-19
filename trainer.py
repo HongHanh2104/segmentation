@@ -57,7 +57,7 @@ class Trainer():
     def train_epoch(self, epoch, dataloader): 
         # 0: Record loss during training process 
         running_loss = meter.AverageValueMeter()
-        loss_metric = self.metric
+        loss_metric = []
         train_loss = []
         self.net.train()
         print("Training ........")
@@ -82,15 +82,16 @@ class Trainer():
             # 8: Update metric
             outs = outs.detach()
             label_imgs = label_imgs.detach()
-            metric_value = loss_metric.calculate(outs, label_imgs)
-            print(metric_value)
+            value = self.metric.calculate('iou', outs, label_imgs)
+            loss_metric.append(value)
+            #print(loss_metric)
             # Update train loss
             train_loss.append(loss.item()) 
 
     
     def val_epoch(self, epoch, dataloader):
         running_loss = meter.AverageValueMeter()
-        val_metric = self.metric
+        val_metric = []
         self.net.eval()
         print("Validating ........")
         progress_bar = tqdm(dataloader)
@@ -110,14 +111,17 @@ class Trainer():
             running_loss.add(loss.item())
         
             # 5: Update metric
-            #outs = outs.detach().cpu()
-            #label_imgs = label_imgs.detach().cpu()
-            metric_value = val_metric.IoU(outs, label_imgs, 13, -1)
+            outs = outs.detach()
+            label_imgs = label_imgs.detach()
+            value = self.metric.calculate('iou', outs, label_imgs)
+            val_metric.append(value)
+            print(val_metric)
         # 5: Get average loss 
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
-
         self.val_loss.append(avg_loss)
+        print("Average Metric:", sum(val_metric)/ len(val_metric))
+        
     
     def train(self, train_dataloader, val_dataloader):
         val_loss = 0
@@ -145,7 +149,7 @@ class Trainer():
             # 5: Visualizing some examples
 
 if __name__ == "__main__":
-    from metrics import IoU
+    from metrics import Metric
     from toymodel import ToyModel
 
     device = torch.device('cpu')
@@ -163,7 +167,7 @@ if __name__ == "__main__":
     net = ToyModel(64, 13)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
-    metric = IoU(13, -1)
+    metric = Metric(nclasses=13)
     trainer = Trainer(device, config, net, criterion, optimizer, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),

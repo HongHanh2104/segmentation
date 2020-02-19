@@ -9,7 +9,7 @@ from unet import UNet
 from tqdm import tqdm
 from torchnet import meter 
 from trainer import Trainer
-from metrics import IoU
+from metrics import Metric
 
 import argparse
 
@@ -62,7 +62,7 @@ def train(config):
                                 momentum=momentum, 
                                 weight_decay=weight_decay)
     # 5: Define metrics
-    metric = IoU(nclasses=13, ignore_index=-1)
+    metric = Metric(nclasses=num_class)
 
     # 6: Create trainer
     trainer = Trainer(device = device,
