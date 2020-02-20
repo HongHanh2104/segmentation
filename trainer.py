@@ -6,6 +6,7 @@ from tqdm import tqdm
 import numpy as np
 import os
 import json
+from tsboard import TensorboardHelper
 
 class Trainer():
     def __init__(self, device, 
@@ -33,6 +34,7 @@ class Trainer():
         self.log_path = config["log"]["path"]
         self.best_loss = np.inf
         self.val_loss = []
+        self.tsboard = TensorboardHelper(path = 'logger/')
 
     def save_checkpoint(self, epoch, val_loss):
         #best_loss = np.inf
@@ -79,6 +81,7 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
+            self.tsboard.update_loss('train', loss.item(), epoch * len(dataloader) + 1)
             # 8: Update metric
             outs = outs.detach()
             label_imgs = label_imgs.detach()
@@ -88,7 +91,7 @@ class Trainer():
             # Update train loss
             train_loss.append(loss.item()) 
 
-    
+    @torch.no_grad()
     def val_epoch(self, epoch, dataloader):
         running_loss = meter.AverageValueMeter()
         val_metric = []
@@ -121,7 +124,10 @@ class Trainer():
         print("Average Loss: ", avg_loss)
         self.val_loss.append(avg_loss)
         print("Average Metric:", sum(val_metric)/ len(val_metric))
-        
+        self.tsboard.update_loss('val', avg_loss, epoch)
+
+        for i in range(len(val_metric)):
+            self.tsboard.update_metric('val', 'iou', val_metric[i], epoch)
     
     def train(self, train_dataloader, val_dataloader):
         val_loss = 0
