@@ -81,7 +81,7 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
-            self.tsboard.update_loss('train', loss.item(), epoch * len(dataloader) + 1)
+            self.tsboard.update_loss('train', loss.item(), epoch * len(dataloader) + i)
             # 8: Update metric
             outs = outs.detach()
             label_imgs = label_imgs.detach()
