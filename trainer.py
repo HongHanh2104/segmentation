@@ -59,7 +59,7 @@ class Trainer():
     def train_epoch(self, epoch, dataloader): 
         # 0: Record loss during training process 
         running_loss = meter.AverageValueMeter()
-        loss_metric = []
+        self.metric.reset()
         train_loss = []
         self.net.train()
         print("Training ........")
@@ -81,20 +81,19 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
+            train_loss.append(loss.item()) 
             self.tsboard.update_loss('train', loss.item(), epoch * len(dataloader) + i)
             # 8: Update metric
             outs = outs.detach()
             label_imgs = label_imgs.detach()
-            value = self.metric.calculate('iou', outs, label_imgs)
-            loss_metric.append(value)
-            #print(loss_metric)
-            # Update train loss
-            train_loss.append(loss.item()) 
+            value = self.metric.calculate(outs, label_imgs)
+            self.metric.update(value)
+        print(self.metric.value())
 
     @torch.no_grad()
     def val_epoch(self, epoch, dataloader):
         running_loss = meter.AverageValueMeter()
-        val_metric = []
+        self.metric.reset()
         self.net.eval()
         print("Validating ........")
         progress_bar = tqdm(dataloader)
@@ -116,18 +115,18 @@ class Trainer():
             # 5: Update metric
             outs = outs.detach()
             label_imgs = label_imgs.detach()
-            value = self.metric.calculate('iou', outs, label_imgs)
-            val_metric.append(value)
-            print(val_metric)
+            value = self.metric.calculate(outs, label_imgs)
+            self.metric.update(value)
+            #print(val_metric)
         # 5: Get average loss 
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
         self.val_loss.append(avg_loss)
-        print("Average Metric:", sum(val_metric)/ len(val_metric))
+        print("Average Metric:", self.metric.value())
         self.tsboard.update_loss('val', avg_loss, epoch)
 
-        for i in range(len(val_metric)):
-            self.tsboard.update_metric('val', 'iou', val_metric[i], epoch)
+        #for i in range(len(val_metric)):
+        #    self.tsboard.update_metric('val', 'iou', val_metric[i], epoch)
     
     def train(self, train_dataloader, val_dataloader):
         val_loss = 0
@@ -155,7 +154,7 @@ class Trainer():
             # 5: Visualizing some examples
 
 if __name__ == "__main__":
-    from metrics import Metric
+    from metrics import IoU
     from toymodel import ToyModel
 
     device = torch.device('cpu')
@@ -173,7 +172,7 @@ if __name__ == "__main__":
     net = ToyModel(64, 13)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
-    metric = Metric(nclasses=13)
+    metric = IoU(nclasses=13, ignore_index=-1)
     trainer = Trainer(device, config, net, criterion, optimizer, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),
