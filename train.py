@@ -42,13 +42,17 @@ def train(config):
                                     img_folder,
                                     depth_folder,
                                     label_folder)
-    train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    # train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, 
+                                                               [len(train_dataset) - len(train_dataset) // 5, len(train_dataset) // 5])
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, num_workers=12, batch_size=1, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=12, batch_size=1)
 
-    val_dataset = SUNRGBDDataset(root_path,
-                                    img_folder,
-                                    depth_folder,
-                                    label_folder)
-    val_dataloader = DataLoader(val_dataset, batch_size=1)
+    # val_dataset = SUNRGBDDataset(root_path,
+    #                                 img_folder,
+    #                                 depth_folder,
+    #                                 label_folder)
+    # val_dataloader = DataLoader(val_dataset, batch_size=1)
 
     # 2: Define network
     set_seed()

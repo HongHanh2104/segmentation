@@ -22,4 +22,4 @@ train:
         save_period:              10
         early_stop:               10
     log:
-        val_step: 2
+        val_step: 1
