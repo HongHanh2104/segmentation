@@ -1,16 +1,34 @@
-from PIL import Image 
-import numpy as np
-import matplotlib.pyplot as plt
+from metrics.metrics import IoU
+from models.toymodel import ToyModel
+from workers.trainer import Trainer
 
-path = '/media/honghanh/STUDY/DOCUMENT/MY_SWEET/MY_PROJECT/Thesis/Segmentation/Data/SUN RGBD/sunrgb_train_depth/sunrgbd_train_depth/1.png'
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.utils.data as data
 
-img = Image.open(path)
+import yaml
 
-(min_pixel, max_pixel) = img.getextrema()
+if __name__ == "__main__":
+    device = torch.device('cpu')
+    path = 'configs/config.json'
+    config = yaml.load(open(path), Loader=yaml.Loader)
+    net = ToyModel(64, 13)
+    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+    optimizer = optim.Adam(net.parameters())
+    metric = IoU(nclasses=13, ignore_index=-1)
+    trainer = Trainer(device, config, net, criterion, optimizer, metric)
 
-img_np = np.array(img, dtype = float)
+    train_dataset = [(torch.randn(size=(3, 100, 100)),
+                    torch.randn(size=(100, 100)),
+                    torch.randint(low=-1, high=13, size=(100, 100)).long())
+                    for _ in range(99)]
+    train_dataloader = data.DataLoader(train_dataset, batch_size=4)
 
-img_np_ = (img_np - np.min(img_np))/(np.max(img_np) - np.min(img_np))
-#plt.plot(img_np_)
-plt.imshow(img_np_)
-plt.show()
+    test_dataset = [(torch.randn(size=(3, 100, 100)),
+                    torch.randn(size=(100, 100)),
+                    torch.randint(low=-1, high=13, size=(100, 100)).long())
+                    for _ in range(99)]
+    test_dataloader = data.DataLoader(test_dataset, batch_size=4)
+
+    trainer.train(train_dataloader, test_dataloader)

@@ -4,10 +4,12 @@ from torch.utils import data
 from torchnet import meter
 from tqdm import tqdm
 import numpy as np
-import os
-import datetime
 
-from loggers.tsboard import TensorboardHelper
+from logger.tsboard import TensorboardHelper
+
+import os
+import json
+import datetime
 
 class Trainer():
     def __init__(self, device, 
@@ -24,13 +26,18 @@ class Trainer():
         self.metric = metric
 
         # Get arguments
+        # self.batch_size = config["train"]["args"]["batch_size"]
         self.nepochs = config["train"]["args"]["epochs"]
+        # self.num_workers = config["train"]["args"]["num_workers"]
+        # self.num_iters = config["train"]["args"]["num_iters"]
+        # self.save_period = config["train"]["args"]["save_period"]
+        # self.early_stop = config["train"]["args"]["early_stop"]
+
         self.log_step = config["log"]["log_per_iter"]
+        self.log_path = config["log"]["path"]
         self.best_loss = np.inf
         self.val_loss = []
-
-        self.save_dir = os.path.join('runs', datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
-        self.tsboard = TensorboardHelper(path=self.save_dir)
+        self.tsboard = TensorboardHelper(path=os.path.join('logger', datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")))
 
     def save_checkpoint(self, epoch, val_loss):
         #best_loss = np.inf
@@ -41,7 +48,7 @@ class Trainer():
 
         if val_loss < self.best_loss:
             print("Loss is improved from %.5f to %.5f. Saving weights ......" % (self.best_loss, val_loss))
-            torch.save(data, os.path.join(self.save_dir, "best_loss.pth"))
+            torch.save(data, os.path.join(self.log_path, "{}_best_loss.pth".format(epoch)))
             # Update best_loss
             self.best_loss = val_loss
         else:
@@ -49,7 +56,7 @@ class Trainer():
 
         # Save the model
         print("Saving curent model ....")
-        torch.save(data, os.path.join(self.save_dir, "current.pth".format(epoch)))
+        torch.save(data, os.path.join(self.log_path, "{}.pth".format(epoch)))
 
 
     def train_epoch(self, epoch, dataloader): 
@@ -147,4 +154,40 @@ class Trainer():
                 self.save_checkpoint(epoch, val_loss)
 
             # 5: Visualizing some examples
+
+if __name__ == "__main__":
+    from metrics import IoU
+    from toymodel import ToyModel
+
+    device = torch.device('cpu')
+    '''
+    config = {
+        "train": {
+            "args": {
+                "epochs": 5
+            }
+        }
+    }
+    '''
+    path = 'config.json'
+    config = json.load(open(path))
+    net = ToyModel(64, 13)
+    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+    optimizer = optim.Adam(net.parameters())
+    metric = IoU(nclasses=13, ignore_index=-1)
+    trainer = Trainer(device, config, net, criterion, optimizer, metric)
+
+    train_dataset = [(torch.randn(size=(3, 100, 100)),
+                    torch.randn(size=(100, 100)),
+                    torch.randint(low=-1, high=13, size=(100, 100)).long())
+                    for _ in range(99)]
+    train_dataloader = data.DataLoader(train_dataset, batch_size=4)
+
+    test_dataset = [(torch.randn(size=(3, 100, 100)),
+                    torch.randn(size=(100, 100)),
+                    torch.randint(low=-1, high=13, size=(100, 100)).long())
+                    for _ in range(99)]
+    test_dataloader = data.DataLoader(test_dataset, batch_size=4)
+
+    trainer.train(train_dataloader, test_dataloader)
     

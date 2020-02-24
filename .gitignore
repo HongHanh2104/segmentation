@@ -61,4 +61,4 @@ target/
 
 # Project data
 data/*
-weights/*
+runs/*
