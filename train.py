@@ -45,8 +45,8 @@ def train(config):
     # train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
     train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, 
                                                                [len(train_dataset) - len(train_dataset) // 5, len(train_dataset) // 5])
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, num_workers=12, batch_size=1, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=12, batch_size=1)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, num_workers=6, batch_size=1, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=6, batch_size=1)
 
     # val_dataset = SUNRGBDDataset(root_path,
     #                                 img_folder,
