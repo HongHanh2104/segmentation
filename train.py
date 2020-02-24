@@ -19,9 +19,9 @@ def train(config):
     device = torch.device('cuda:{}'.format(config['gpus']) \
             if torch.cuda.is_available() and config.get('gpus', None) is not None
             else 'cpu')
+    print(device)
 
     # Get model information
-    model_type = config["model"]["name"]
     num_class = config["model"]["num_class"]
     method = config["model"]["method"]
 
@@ -29,16 +29,12 @@ def train(config):
     learning_rate = config["model"]["args"]["learning_rate"]
     momentum = config["model"]["args"]["momentum"]
     weight_decay = config["model"]["args"]["weight_decay"]
-
-    # Get dataset information
-    dataset_type = config["train"]["type"]
     
     # Get path
     root_path = config["train"]["path"]["root"]
     img_folder = config["train"]["path"]["img_folder"]
     depth_folder = config["train"]["path"]["depth_folder"]
     label_folder = config["train"]["path"]["label_folder"]
-    save_path = config["train"]["path"]["save_path"]
 
     # 1: Load datasets
     set_seed()
