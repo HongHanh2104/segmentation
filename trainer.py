@@ -7,6 +7,7 @@ import numpy as np
 import os
 import json
 from tsboard import TensorboardHelper
+import datetime
 
 class Trainer():
     def __init__(self, device, 
@@ -34,7 +35,7 @@ class Trainer():
         self.log_path = config["log"]["path"]
         self.best_loss = np.inf
         self.val_loss = []
-        self.tsboard = TensorboardHelper(path = 'logger/')
+        self.tsboard = TensorboardHelper(path=os.path.join('logger', datetime.datetime.now().strftime("%H:%M:%S.%f")))
 
     def save_checkpoint(self, epoch, val_loss):
         #best_loss = np.inf
@@ -125,8 +126,7 @@ class Trainer():
         print("Average Metric:", self.metric.value())
         self.tsboard.update_loss('val', avg_loss, epoch)
 
-        #for i in range(len(val_metric)):
-        #    self.tsboard.update_metric('val', 'iou', val_metric[i], epoch)
+        self.tsboard.update_metric('val', 'iou', self.metric.value(), epoch)
     
     def train(self, train_dataloader, val_dataloader):
         val_loss = 0
