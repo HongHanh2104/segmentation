@@ -17,8 +17,10 @@ class EncoderBlock(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size = 2)
 
     def forward(self, x):
+        #print('Input:', x.shape)
         x = self.down_conv(x)
         pool = self.pool(x)
+        #print('Down:', x.shape, pool.shape)
         return x, pool
 
 class DecoderBlock(nn.Module):
@@ -37,7 +39,9 @@ class DecoderBlock(nn.Module):
         )
     
     def forward(self, x, x_copy):
+        #print('Input:', x.shape, x_copy.shape)
         x = self.up_transpose(x)
+        #print('Up:', x.shape)
         if self.method == 'interpolate':
             x = F.interpolate(x, size = (x_copy.size(2), x_copy.size(3)),
                                 mode = 'bilinear', align_corners = True)
@@ -47,10 +51,13 @@ class DecoderBlock(nn.Module):
             diffY = x_copy.size()[2] - x.size()[2]
             x = F.pad(x, (diffX // 2, diffX - diffX //2,
                         diffY // 2, diffX - diffY //2))
+        #print('Scale:', x.shape)
 
         # Concatenate
         x = torch.cat([x_copy, x], dim = 1)
+        #print('Concat', x.shape)
         x = self.up_conv(x)
+        #print('UpConv:', x.shape)
         return x
 
 class MiddleBlock(nn.Module):
@@ -64,12 +71,12 @@ class MiddleBlock(nn.Module):
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
         )
-        self.pool = nn.MaxPool2d(kernel_size = 2)
 
     def forward(self, x):
+        #print('Input:', x.shape)
         x = self.conv(x)
-        pool = self.pool(x)
-        return x, pool
+        #print('Middle:', x.shape)
+        return x
 
 class UNet(nn.Module):
     def __init__(self, num_classes, method):
@@ -96,7 +103,7 @@ class UNet(nn.Module):
         d_3, x = self.down_conv3(x)
         d_4, x = self.down_conv4(x)
         
-        mid, _ = self.middle_conv(x)
+        mid = self.middle_conv(x)
         
         u_1 = self.up_conv1(mid, d_4)
         u_2 = self.up_conv2(u_1, d_3)
@@ -120,4 +127,4 @@ if __name__ == "__main__":
         loss.backward()
         optimizer.step()
         
-        print(iter_id, loss.item())
+        #print(iter_id, loss.item())

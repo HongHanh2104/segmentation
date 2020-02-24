@@ -84,7 +84,7 @@ class Trainer():
             label_imgs = label_imgs.detach()
             value = self.metric.calculate(outs, label_imgs)
             self.metric.update(value)
-        print(self.metric.value())
+        print(self.metric.summary())
 
     @torch.no_grad()
     def val_epoch(self, epoch, dataloader):
@@ -121,6 +121,7 @@ class Trainer():
         #print("Average Metric:", self.metric.value())
         self.tsboard.update_loss('val', avg_loss, epoch)
 
+        print(self.metric.summary())
         self.tsboard.update_metric('val', 'iou', self.metric.value(), epoch)
     
     def train(self, train_dataloader, val_dataloader):

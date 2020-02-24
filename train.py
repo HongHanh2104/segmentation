@@ -11,11 +11,14 @@ from datasets.sunrgbd import SUNRGBDDataset
 from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
+from utils.random import set_seed
 
 def train(config):
     assert config is not None, "Do not have config file!"
 
-    device = torch.device('cuda:{}'.format(config['gpus']) if config.get('gpus', False) and torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:{}'.format(config['gpus']) \
+            if torch.cuda.is_available() and config.get('gpus', None) is not None
+            else 'cpu')
 
     # Get model information
     model_type = config["model"]["name"]
@@ -38,6 +41,7 @@ def train(config):
     save_path = config["train"]["path"]["save_path"]
 
     # 1: Load datasets
+    set_seed()
     train_dataset = SUNRGBDDataset(root_path,
                                     img_folder,
                                     depth_folder,
@@ -51,6 +55,7 @@ def train(config):
     val_dataloader = DataLoader(val_dataset, batch_size=1)
 
     # 2: Define network
+    set_seed()
     net = UNet(num_class, method).to(device)
     print(net)
     # 3: Define loss

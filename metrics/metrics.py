@@ -22,10 +22,10 @@ class IoU(Metrics):
         super().__init__()
         self.nclasses = nclasses
         self.ignore_index = ignore_index
-        self.mean_class = {}
+        self.reset()
 
     def calculate(self, output, target):
-        ious = {}
+        ious = [0 for _ in range(self.nclasses)]
         _, prediction = torch.max(output, dim=1)
         target_mask = (target == self.ignore_index).bool()
         prediction[target_mask] = -1
@@ -36,23 +36,23 @@ class IoU(Metrics):
             union = torch.sum(pred_c | target_c)
             iou = (intersection.float() + 1e-6) / (union.float() + 1e-6)
             ious[c] = iou.item()
-        
-        #miou = np.mean([iou for iou in self.mean_per_batch.values()])
         return ious
 
     def update(self, iou_per_batch):
-        for c, value in iou_per_batch.items():
-            self.mean_class[c] = value 
+        self.mean_class.append(iou_per_batch)
     
     def value(self):
-        return np.mean([x for x in self.mean_class.values()])
+        return np.mean(self.mean_class)
 
     def reset(self):
-        self.mean_class = {}
+        self.mean_class = []
+
+    def summary(self):
+        return np.mean(self.mean_class, axis=0)
 
 if __name__ == "__main__":
     nclasses = 3
-    ignore_index = 0
+    ignore_index = -1
 
     target = torch.Tensor([
         [
@@ -90,4 +90,3 @@ if __name__ == "__main__":
     metric = IoU(nclasses=nclasses, ignore_index=-1)
     print(metric.calculate(output, target))
 
-    
