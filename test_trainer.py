@@ -11,7 +11,7 @@ import yaml
 
 if __name__ == "__main__":
     device = torch.device('cpu')
-    path = 'configs/config.json'
+    path = 'configs/test.yaml'
     config = yaml.load(open(path), Loader=yaml.Loader)
     net = ToyModel(64, 13)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')

@@ -25,7 +25,7 @@ class Trainer():
 
         # Get arguments
         self.nepochs = config["train"]["args"]["epochs"]
-        self.log_step = config["log"]["log_per_iter"]
+        self.val_step = config['train']['log']['val_step']
         self.best_loss = np.inf
         self.val_loss = []
 
@@ -134,14 +134,14 @@ class Trainer():
             self.train_epoch(epoch=epoch, dataloader=train_dataloader)
             
             # 2: Testing phase
-            if (epoch + 1) % 5 == 0:
+            if (epoch + 1) % self.val_step == 0:
                 self.val_epoch(epoch, dataloader=val_dataloader)
                 print('-------------------------------')
              
             # 3: Learning rate scheduling
 
             # 4: Saving checkpoints
-            if (epoch + 1) % 10 == 0:
+            if (epoch + 1) % self.val_step == 0:
                 # Get latest val loss here 
                 val_loss = self.val_loss[-1]
 
