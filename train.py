@@ -1,17 +1,16 @@
 import argparse 
-import json 
+import yaml
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils import data
-from sunrgbd import SUNRGBDDataset
-from unet import UNet
 from tqdm import tqdm
-from torchnet import meter 
-from trainer import Trainer
-from metrics import IoU
+from torchnet import meter
 
-import argparse
+from datasets.sunrgbd import SUNRGBDDataset
+from models.unet import UNet
+from workers.trainer import Trainer
+from metrics.metrics import IoU
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -75,13 +74,14 @@ def train(config):
     trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
 
 if __name__ == "__main__":
-    config_path = 'config.json'
-    config = json.load(open(config_path, 'r'))
-
     parser = argparse.ArgumentParser()
+    parser.add_argument('--config')
     parser.add_argument('--gpus', default=None)
 
     args = parser.parse_args()
+
+    config_path = args.config
+    config = yaml.load(open(config_path, 'r'), Loader=yaml.Loader)
     config['gpus'] = args.gpus
 
     train(config)

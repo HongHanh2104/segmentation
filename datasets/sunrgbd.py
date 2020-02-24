@@ -4,8 +4,9 @@ from torch.utils import data
 import os 
 import numpy as np
 from PIL import Image
-from utils import execute_filename, rescale, NormMaxMin
 import matplotlib.pyplot as plt
+
+from utils.utils import execute_filename, rescale, NormMaxMin
 
 class SUNRGBDDataset(data.Dataset):
     def __init__(self,  root_path = None,

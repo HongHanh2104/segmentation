@@ -6,9 +6,9 @@
         "num_class":                    13,
         "method":                       "interpolate",
         "args":{
-            "learning_rate":            1e-4,
+            "learning_rate":            0.0001,
             "momentum":                 0.9,
-            "weight_decay":             5e-4
+            "weight_decay":             0.0005
         }
         
     },
