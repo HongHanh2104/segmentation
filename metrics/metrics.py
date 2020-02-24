@@ -1,7 +1,5 @@
 import torch 
 import numpy as np
-from ignite.metrics import ConfusionMatrix, IoU, mIoU
-
 
 class Metrics():
     def __init__(self):
