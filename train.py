@@ -46,7 +46,7 @@ def train(config):
                                     img_folder,
                                     depth_folder,
                                     label_folder)
-    train_dataloader = DataLoader(train_dataset, batch_size=1)
+    train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 
     val_dataset = SUNRGBDDataset(root_path,
                                     img_folder,
