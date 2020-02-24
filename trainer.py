@@ -35,7 +35,7 @@ class Trainer():
         self.log_path = config["log"]["path"]
         self.best_loss = np.inf
         self.val_loss = []
-        self.tsboard = TensorboardHelper(path=os.path.join('logger', datetime.datetime.now().strftime("%d-%b-%Y %H:%M:%S.%f")))
+        self.tsboard = TensorboardHelper(path=os.path.join('logger', datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")))
 
     def save_checkpoint(self, epoch, val_loss):
         #best_loss = np.inf
