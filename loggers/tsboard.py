@@ -6,9 +6,7 @@ class TensorboardHelper():
         self.writer = SummaryWriter(log_dir=path)
     
     def update_loss(self, phase, value, step):
-        self.writer.add_scalar(tag=phase, scalar_value=value, global_step=step)
+        self.writer.add_scalar(f'{phase}/loss', value, step)
 
     def update_metric(self, phase, metric, value, step):
-        self.writer.add_scalar('{}/{}'.format(phase, metric), value, step)
-    
-    
+        self.writer.add_scalar(f'{phase}/{metric}', value, step)
