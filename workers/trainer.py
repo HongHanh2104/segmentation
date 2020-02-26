@@ -22,31 +22,38 @@ class Trainer():
         self.criterion = criterion
         self.optimizer = optimier
         self.metric = metric
-
         # Get arguments
         self.nepochs = config["train"]["args"]["epochs"]
         self.val_step = config['train']['log']['val_step']
         self.best_loss = np.inf
+        self.best_metric = 0.0
         self.val_loss = []
-
+        self.val_metric = []
         self.save_dir = os.path.join('runs', datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))
         self.tsboard = TensorboardHelper(path=self.save_dir)
 
-    def save_checkpoint(self, epoch, val_loss):
+    def save_checkpoint(self, epoch, val_loss, val_metric):
         #best_loss = np.inf
         data = {
+            "epoch": epoch,
             "model_state_dict": self.net.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict()
         }
 
         if val_loss < self.best_loss:
             print("Loss is improved from %.5f to %.5f. Saving weights ......" % (self.best_loss, val_loss))
-            torch.save(data, os.path.join(self.save_dir, "best_loss.pth"))
+            torch.save(data, os.path.join(self.save_dir, "best_loss_{}.pth".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))))
             # Update best_loss
             self.best_loss = val_loss
         else:
             print("Loss is not improved from %.6f." % (self.best_loss))
 
+        if val_metric > self.best_metric:
+            print("Metric improved from %.6f to %.6f. Saving weights ..." % (self.best_metric, val_metric))
+            torch.save(data, os.path.join(self.save_dir, "best_metric_{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))))
+            self.best_metric = val_metric
+        else:
+            print("Metric did not improve from %.6f ." % (self.best_metric))
         # Save the model
         print("Saving curent model ....")
         torch.save(data, os.path.join(self.save_dir, "current.pth".format(epoch)))
@@ -56,7 +63,6 @@ class Trainer():
         # 0: Record loss during training process 
         running_loss = meter.AverageValueMeter()
         self.metric.reset()
-        train_loss = []
         self.net.train()
         print("Training ........")
         progress_bar = tqdm(dataloader)
@@ -77,7 +83,6 @@ class Trainer():
             self.optimizer.step()
             # 7: Update loss 
             running_loss.add(loss.item())
-            train_loss.append(loss.item()) 
             self.tsboard.update_loss('train', loss.item(), epoch * len(dataloader) + i)
             # 8: Update metric
             outs = outs.detach()
@@ -118,6 +123,7 @@ class Trainer():
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
         self.val_loss.append(avg_loss)
+        self.val_metric.append(self.metric.value())
         #print("Average Metric:", self.metric.value())
         self.tsboard.update_loss('val', avg_loss, epoch)
 
@@ -144,8 +150,8 @@ class Trainer():
             if (epoch + 1) % self.val_step == 0:
                 # Get latest val loss here 
                 val_loss = self.val_loss[-1]
-
-                self.save_checkpoint(epoch, val_loss)
+                val_metric = self.val_metric[-1]
+                self.save_checkpoint(epoch, val_loss, val_metric)
 
             # 5: Visualizing some examples
     
