@@ -7,58 +7,62 @@ from models.toymodel import ToyModel
 from models.unet import UNet
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 
-def read_image(img_path):
-    img = Image.open(img_path)
-    img = transforms.ToTensor()(img)
-    img = img.unsqueeze(0)
-    return img
+from utils.image import load_image_as_tensor
 
 @torch.no_grad()
-def predict(net, device, image):
+def predict(net, inp):
     net.eval()
     start = time.time()
-    img = image.to(device)
-    out = net(img).detach()
-    _, pred = torch.max(out, dim=1) 
-    print(pred.squeeze(0).shape)
-    pred = Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
+    out = net(inp).detach()
     print("Prediction time: %f" % (time.time()-start))
+    return out
 
-    return pred
+def post_process(out):
+    out = out.cpu()
+    _, pred = torch.max(out, dim=1)
+    return Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
 
-
-def infer(pretrained_path, input_path, output_path):
-    dev_id = 'cuda' if torch.cuda.is_available() else 'cpu'
+def infer(pretrained_path, input_path, output_path=None, gpus=None):
+    dev_id = f'cuda:{gpus}' if torch.cuda.is_available() \
+                               and gpus is not None \
+             else 'cpu'
     device = torch.device(dev_id)
 
     # 1: Load pretrained net
     pretrained_weight = torch.load(pretrained_path, map_location=dev_id)
-    net = ToyModel(64, 13)
+    net = ToyModel(64, 13).to(device)
     net.load_state_dict(pretrained_weight['model_state_dict'])
     
     # 2: Load image 
-    input_img = read_image(input_path)
+    input_img = load_image_as_tensor(input_path).unsqueeze(0).to(device)
 
     # 3: Predict the image
-    pred = predict(net=net,
-                    device=device,
-                    image=input_img)
-    pred.save(os.path.join(output_path, 'prediction.png'))
+    out = predict(net=net,
+                  inp=input_img)
 
-    
+    pred = post_process(out)
+
+    if output_path is not None:
+        pred.save(os.path.join(output_path, 'prediction.png'))
+    else:
+        plt.imshow(pred)
+        plt.show()
+        plt.close()
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pretrained')
     parser.add_argument('--input')
-    parser.add_argument('--output')
+    parser.add_argument('--output', default=None)
+    parser.add_argument('--gpus', default=None)
     args = parser.parse_args()
 
     infer(pretrained_path=args.pretrained,
-            input_path=args.input,
-            output_path=args.output)
+          input_path=args.input,
+          output_path=args.output,
+          gpus=args.gpus)
 
 if __name__ == "__main__":
-    main()    
-
+    main()
