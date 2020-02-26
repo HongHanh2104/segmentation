@@ -42,7 +42,7 @@ class Trainer():
 
         if val_loss < self.best_loss:
             print("Loss is improved from %.5f to %.5f. Saving weights ......" % (self.best_loss, val_loss))
-            torch.save(data, os.path.join(self.save_dir, "best_loss_{}.pth".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))))
+            torch.save(data, os.path.join(self.save_dir, "best_loss.pth"))
             # Update best_loss
             self.best_loss = val_loss
         else:
@@ -50,7 +50,7 @@ class Trainer():
 
         if val_metric > self.best_metric:
             print("Metric improved from %.6f to %.6f. Saving weights ..." % (self.best_metric, val_metric))
-            torch.save(data, os.path.join(self.save_dir, "best_metric_{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S"))))
+            torch.save(data, os.path.join(self.save_dir, "best_metric.pth"))
             self.best_metric = val_metric
         else:
             print("Metric did not improve from %.6f ." % (self.best_metric))
