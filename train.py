@@ -15,18 +15,23 @@ from utils.random import set_seed
 
 def train(config):
     assert config is not None, "Do not have config file!"
+        # Get pretrained model
+    pretrained_path = config["pretrained"]
 
     device = torch.device('cuda:{}'.format(config['gpus']) \
             if torch.cuda.is_available() and config.get('gpus', None) is not None
             else 'cpu')
     print(device)
+    
+    if (pretrained_path != None):
+        pretrained = torch.load(pretrained_path, map_location=device)
+        for item in ["model", "train"]:
+            config[item] = pretrained["config"][item]
 
     # Get model information
     num_class = config["model"]["num_class"]
     method = config["model"]["method"]
 
-    # Get pretrained model
-    pretrained_path = config["pretrained"]
 
     # Get model args
     learning_rate = config["model"]["args"]["learning_rate"]
@@ -67,8 +72,7 @@ def train(config):
     metric = IoU(nclasses=num_class, ignore_index=-1)
 
     # Train from pretrained if it is not None
-    if (pretrained_path != None):
-        pretrained = torch.load(pretrained_path, map_location=device)
+    if (pretrained is not None):
         net.load_state_dict(pretrained['model_state_dict'])
         optimizer.load_state_dict(pretrained['optimizer_state_dict'])
 
