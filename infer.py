@@ -31,13 +31,18 @@ def infer(pretrained_path, input_path, output_path=None, gpus=None):
     device = torch.device(dev_id)
 
     # 1: Load pretrained net
-    pretrained_weight = torch.load(pretrained_path, map_location=dev_id)
-    net = ToyModel(64, 13).to(device)
-    net.load_state_dict(pretrained_weight['model_state_dict'])
+    pretrained = torch.load(pretrained_path, map_location=dev_id)
+    config = pretrained['config']
+    nclasses = config['model']['num_class']
+    nfeatures = config["model"]["num_features"]
+
+    net = ToyModel(nfeatures=nfeatures, nclasses=nclasses).to(device)
+    net.load_state_dict(pretrained['model_state_dict'])
     
     # 2: Load image 
     input_img = load_image_as_tensor(input_path).unsqueeze(0).to(device)
 
+    
     # 3: Predict the image
     out = predict(net=net,
                   inp=input_img)
@@ -50,6 +55,7 @@ def infer(pretrained_path, input_path, output_path=None, gpus=None):
         plt.imshow(pred)
         plt.show()
         plt.close()
+    
 
 def main():
     parser = argparse.ArgumentParser()

@@ -11,9 +11,11 @@ import yaml
 
 if __name__ == "__main__":
     device = torch.device('cpu')
-    path = 'configs/test.yaml'
+    path = 'configs/test_config.yaml'
     config = yaml.load(open(path), Loader=yaml.Loader)
-    net = ToyModel(64, 13)
+    nclasses = config['model']['num_class']
+    nfeatures = config['model']['num_features']
+    net = ToyModel(nfeatures=nfeatures, nclasses=nclasses)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
     metric = IoU(nclasses=13, ignore_index=-1)
