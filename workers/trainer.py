@@ -17,14 +17,15 @@ class Trainer():
                     optimier,
                     metric):
         super(Trainer, self).__init__()
+        self.config = config
         self.device = device
         self.net = net
         self.criterion = criterion
         self.optimizer = optimier
         self.metric = metric
         # Get arguments
-        self.nepochs = config["train"]["args"]["epochs"]
-        self.val_step = config['train']['log']['val_step']
+        self.nepochs = self.config["train"]["args"]["epochs"]
+        self.val_step = self.config['train']['log']['val_step']
         self.best_loss = np.inf
         self.best_metric = 0.0
         self.val_loss = []
@@ -33,11 +34,12 @@ class Trainer():
         self.tsboard = TensorboardHelper(path=self.save_dir)
 
     def save_checkpoint(self, epoch, val_loss, val_metric):
-        #best_loss = np.inf
+        
         data = {
             "epoch": epoch,
             "model_state_dict": self.net.state_dict(),
-            "optimizer_state_dict": self.optimizer.state_dict()
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "config": self.config
         }
 
         if val_loss < self.best_loss:
