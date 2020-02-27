@@ -25,6 +25,9 @@ def train(config):
     num_class = config["model"]["num_class"]
     method = config["model"]["method"]
 
+    # Get pretrained model
+    pretrained_path = config["pretrained"]
+
     # Get model args
     learning_rate = config["model"]["args"]["learning_rate"]
     momentum = config["model"]["args"]["momentum"]
@@ -48,16 +51,11 @@ def train(config):
     train_dataloader = torch.utils.data.DataLoader(train_dataset, num_workers=6, batch_size=1, shuffle=True)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=6, batch_size=1)
 
-    # val_dataset = SUNRGBDDataset(root_path,
-    #                                 img_folder,
-    #                                 depth_folder,
-    #                                 label_folder)
-    # val_dataloader = DataLoader(val_dataset, batch_size=1)
-
     # 2: Define network
     set_seed()
     net = UNet(num_class, method).to(device)
     print(net)
+    
     # 3: Define loss
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     # 4: Define Optimizer
@@ -67,6 +65,12 @@ def train(config):
                                 weight_decay=weight_decay)
     # 5: Define metrics
     metric = IoU(nclasses=num_class, ignore_index=-1)
+
+    # Train from pretrained if it is not None
+    if (pretrained_path != None):
+        pretrained = torch.load(pretrained_path, map_location=device)
+        net.load_state_dict(pretrained['model_state_dict'])
+        optimizer.load_state_dict(pretrained['optimizer_state_dict'])
 
     # 6: Create trainer
     trainer = Trainer(device = device,
