@@ -15,6 +15,7 @@ class Trainer():
                     net, 
                     criterion, 
                     optimier,
+                    scheduler,
                     metric):
         super(Trainer, self).__init__()
         self.config = config
@@ -22,6 +23,7 @@ class Trainer():
         self.net = net
         self.criterion = criterion
         self.optimizer = optimier
+        self.scheduler = scheduler
         self.metric = metric
         # Get arguments
         self.nepochs = self.config["train"]["args"]["epochs"]
@@ -147,7 +149,7 @@ class Trainer():
                 print('-------------------------------')
              
             # 3: Learning rate scheduling
-
+            self.scheduler.step(self.val_loss[-1])
             # 4: Saving checkpoints
             if (epoch + 1) % self.val_step == 0:
                 # Get latest val loss here 

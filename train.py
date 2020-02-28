@@ -64,11 +64,13 @@ def train(config):
     
     # 3: Define loss
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
-    # 4: Define Optimizer
+    # 4: Define Optimizer & Scheduler 
     optimizer = torch.optim.SGD(net.parameters(),
                                 lr=learning_rate, 
                                 momentum=momentum, 
                                 weight_decay=weight_decay)
+    
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau
     # 5: Define metrics
     metric = IoU(nclasses=num_class, ignore_index=-1)
 
@@ -83,6 +85,7 @@ def train(config):
                         net = net,
                         criterion = criterion,
                         optimier = optimizer,
+                        scheduler = scheduler,
                         metric = metric)
     # 7: Start to train
     trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
