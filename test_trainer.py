@@ -18,8 +18,10 @@ if __name__ == "__main__":
     net = ToyModel(nfeatures=nfeatures, nclasses=nclasses)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
+                                                        factor=0.5, patience=2, verbose=True)
     metric = IoU(nclasses=13, ignore_index=-1)
-    trainer = Trainer(device, config, net, criterion, optimizer, metric)
+    trainer = Trainer(device, config, net, criterion, optimizer, scheduler, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),
                     torch.randn(size=(100, 100)),
