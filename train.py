@@ -57,10 +57,14 @@ def train(config):
     #                                 label_folder)
     # train_dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-    dataset = IRCADSingle(root_path='data/3Dircadb1')
+    # dataset = IRCADSingle(root_path='data/3Dircadb1')
 
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, 
-                                                               [len(dataset) - len(dataset) // 5, len(dataset) // 5])
+    # train_dataset, val_dataset = torch.utils.data.random_split(dataset, 
+    #                                                            [len(dataset) - len(dataset) // 5, len(dataset) // 5])
+
+    train_dataset = IRCADSingle(root_path='data/3Dircadb1/train')
+    val_dataset = IRCADSingle(root_path='data/3Dircadb1/val')
+
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=True)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
 
