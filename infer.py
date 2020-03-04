@@ -8,8 +8,10 @@ from models.unet import UNet
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import pydicom as dicom
 
 from utils.image import load_image_as_tensor
+from utils.utils import NormMaxMin
 
 @torch.no_grad()
 def predict(net, inp):
@@ -34,14 +36,18 @@ def infer(pretrained_path, input_path, output_path=None, gpus=None):
     pretrained = torch.load(pretrained_path, map_location=dev_id)
     config = pretrained['config']
     nclasses = config['model']['num_class']
-    nfeatures = config["model"]["num_features"]
+    input_channel = config["model"]["input_channel"]
+    method = config['model']['method']
 
-    net = ToyModel(nfeatures=nfeatures, nclasses=nclasses).to(device)
+    net = UNet(nclasses, input_channel, method).to(device)
     net.load_state_dict(pretrained['model_state_dict'])
     
     # 2: Load image 
-    input_img = load_image_as_tensor(input_path).unsqueeze(0).to(device)
-
+    # input_img = load_image_as_tensor(input_path).unsqueeze(0).to(device)
+    input_img = transforms.Compose([
+        transforms.ToTensor(),
+        NormMaxMin()
+    ])(dicom.dcmread(input_path).pixel_array).unsqueeze(0)
     
     # 3: Predict the image
     out = predict(net=net,
@@ -52,6 +58,9 @@ def infer(pretrained_path, input_path, output_path=None, gpus=None):
     if output_path is not None:
         pred.save(os.path.join(output_path, 'prediction.png'))
     else:
+        plt.subplot(1, 2, 1)
+        plt.imshow(input_img.squeeze())
+        plt.subplot(1, 2, 2)
         plt.imshow(pred)
         plt.show()
         plt.close()

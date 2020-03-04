@@ -1,3 +1,3 @@
-from datasets.ircad import test
+from datasets.ircad import test as test
 
 test()

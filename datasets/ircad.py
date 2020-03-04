@@ -7,17 +7,17 @@ from utils.utils import NormMaxMin
 
 import os
 import glob
-
+from pathlib import Path
 
 class IRCADSeries(data.Dataset):
     def __init__(self, root_path=None):
         super().__init__()
         assert root_path is not None, "Missing root path, should be a path 3D-IRCAD dataset!"
-        self.root_path = root_path
+        self.root_path = Path(root_path)
         self.series_id = []
         for folder_name in os.listdir(self.root_path):
-            img_lst = [os.path.join(self.root_path, folder_name, "PATIENT_DICOM", x) for x in sorted(
-                            os.listdir(os.path.join(self.root_path, folder_name,"PATIENT_DICOM")),
+            img_lst = [ str(self.root_path / folder_name / "PATIENT_DICOM" / x) for x in sorted(
+                            os.listdir(self.root_path / folder_name / "PATIENT_DICOM"),
                             key=lambda x: int(x.split('_')[-1]))]
             self.series_id.append(img_lst)
     
@@ -32,14 +32,17 @@ class IRCADSeries(data.Dataset):
         arr_serie = [arr_serie_tf(x).unsqueeze(0) for x in arr_serie]
         arr_serie = torch.cat(arr_serie)
         
-        dicom_serie = [dicom.dcmread(x) for x in (serie_id.replace('PATIENT_DICOM',
-                        'MASKS_DICOM/liver'))]
+        dicom_serie = [dicom.dcmread(x.replace('PATIENT_DICOM',
+                        'MASKS_DICOM/liver')) for x in serie_id]
         mask_serie = [x.pixel_array for x in dicom_serie]
         mask_serie_tf = transforms.Compose([
         ])
-        mask_serie = [torch.Tensor(mask_serie_tf(x)).long() // 255 for x in mask_serie]
+        mask_serie = [torch.Tensor(mask_serie_tf(x)).long().unsqueeze(0) // 255 for x in mask_serie]
         mask_serie = torch.cat(mask_serie)
         return arr_serie, mask_serie
+
+    def __len__(self):
+        return len(self.series_id)
         
 class IRCADSingle(data.Dataset):
     def __init__(self, root_path=None):
@@ -50,6 +53,7 @@ class IRCADSingle(data.Dataset):
         
     def __getitem__(self, index):
         img_id = self.imgs_id[index]
+
         dicom_img = dicom.dcmread(img_id)
         arr_img = dicom_img.pixel_array
         arr_img_tf = transforms.Compose([
@@ -64,10 +68,6 @@ class IRCADSingle(data.Dataset):
         mask_img_tf = transforms.Compose([
         ])
         mask_img = torch.Tensor(mask_img_tf(mask_img)).long() // 255
-        
-        #plt.imshow(arr_img.squeeze(0))
-        #plt.imshow(mask_img, alpha=0.5, origin='upper')
-        #plt.show()
         
         return arr_img, mask_img
 
@@ -95,13 +95,19 @@ def test():
 def another_test():
     import argparse
     import matplotlib.pyplot as plt
+    import torchvision as tv
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--root")
     args = parser.parse_args()
 
     dataset = IRCADSeries(root_path=args.root)
-    dataset.__getitem__(0)
+    for img, mask in dataset:
+        plt.imshow(tv.utils.make_grid(img, nrow=15).permute(1, 2, 0))
+        plt.imshow(tv.utils.make_grid(mask.unsqueeze(1), nrow=15).squeeze().permute(1, 2, 0) * 255, alpha=0.5)
+        plt.tight_layout()
+        plt.show()
+        plt.close()
 
 if __name__ == "__main__":
     another_test()

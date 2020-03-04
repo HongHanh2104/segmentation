@@ -6,6 +6,9 @@ from torch.utils.data import DataLoader
 from torch.utils import data
 from tqdm import tqdm
 from torchnet import meter
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
 
 from datasets.sunrgbd import SUNRGBDDataset
 from datasets.ircad import IRCADSingle
@@ -13,6 +16,8 @@ from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
+
+import time
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -66,47 +71,45 @@ def train(config):
     # 2: Define network
     set_seed()
     net = UNet(num_class, input_channel, method).to(device)
-    print(net)
+    # print(net)
     
-    # 3: Define loss
-    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
-    # 4: Define Optimizer & Scheduler 
-    optimizer = torch.optim.SGD(net.parameters(),
-                                lr=learning_rate, 
-                                momentum=momentum, 
-                                weight_decay=weight_decay)
-    
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
-                                                           factor=0.5, patience=5, verbose=True)
     # 5: Define metrics
     metric = IoU(nclasses=num_class)
 
     # Train from pretrained if it is not None
     if (pretrained is not None):
         net.load_state_dict(pretrained['model_state_dict'])
-        optimizer.load_state_dict(pretrained['optimizer_state_dict'])
 
-    # 6: Create trainer
-    trainer = Trainer(device = device,
-                        config = config,
-                        net = net,
-                        criterion = criterion,
-                        optimier = optimizer,
-                        scheduler = scheduler,
-                        metric = metric)
+    for inp, lbl in train_dataset:
+        net.eval()
+        start = time.time()
+        out = net(inp.unsqueeze(0).to(device)).detach()
+        print("Prediction time: %f" % (time.time()-start))
+        
+        out = out.cpu()
+        _, pred = torch.max(out, dim=1)
+        pred = Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
 
-    # 7: Start to train
-    trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
+        plt.subplot(1, 3, 1)
+        plt.imshow(inp.squeeze())
+        plt.subplot(1, 3, 2)
+        plt.imshow(lbl)
+        plt.subplot(1, 3, 3)
+        plt.imshow(pred)
+        plt.show()
+        plt.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config')
     parser.add_argument('--gpus', default=None)
+    parser.add_argument('--weight')
 
     args = parser.parse_args()
 
     config_path = args.config
     config = yaml.load(open(config_path, 'r'), Loader=yaml.Loader)
     config['gpus'] = args.gpus
+    config['pretrained'] = args.weight
 
     train(config)
