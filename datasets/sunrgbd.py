@@ -56,3 +56,32 @@ class SUNRGBDDataset(data.Dataset):
 
     def __len__(self):
         return len(self.img_ids)
+
+
+def test():
+    import argparse
+    import matplotlib.pyplot as plt
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root")
+    parser.add_argument("--color", default='SUNRGBD-train_images')
+    parser.add_argument("--depth", default='sunrgbd_train_depth')
+    parser.add_argument("--label", default='train13labels')
+    args = parser.parse_args()
+
+    dataset = SUNRGBDDataset(root_path = args.root,
+                    color_img_folder = args.color,
+                    depth_img_folder = args.depth,
+                    label_img_folder = args.label)
+    
+    for i, (color_img, depth_img, label_img) in enumerate(dataset):
+        plt.subplot(3, 1, 1)
+        plt.imshow(color_img.permute(1, 2, 0))
+        plt.subplot(3, 1, 2)
+        plt.imshow(label_img)
+        plt.subplot(3, 1, 3)
+        plt.imshow(depth_img.squeeze(0))
+        plt.show()
+
+if __name__ == "__main__":
+    test()

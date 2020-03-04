@@ -1,7 +1,8 @@
 gpus: null
 model: 
     name:                         Unet
-    num_class:                    13
+    num_class:                    2
+    input_channel:                1
     method:                       interpolate
     args:
         learning_rate:            0.0001
