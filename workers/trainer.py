@@ -150,6 +150,7 @@ class Trainer():
              
             # 3: Learning rate scheduling
             self.scheduler.step(self.val_loss[-1])
+            
             # 4: Saving checkpoints
             if (epoch + 1) % self.val_step == 0:
                 # Get latest val loss here 
