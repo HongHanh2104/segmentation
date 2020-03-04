@@ -13,6 +13,7 @@ from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
+from losses.bce import BCEWithLogitsLoss
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -69,7 +70,9 @@ def train(config):
     print(net)
     
     # 3: Define loss
-    criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+    # criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+    criterion = BCEWithLogitsLoss()
+
     # 4: Define Optimizer & Scheduler 
     optimizer = torch.optim.SGD(net.parameters(),
                                 lr=learning_rate, 

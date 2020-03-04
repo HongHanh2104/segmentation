@@ -94,8 +94,9 @@ class UNet(nn.Module):
         self.up_conv3 = DecoderBlock(256, 128, method)
         self.up_conv4 = DecoderBlock(128, 64, method)
         
-        self.final_conv = nn.Conv2d(64, num_classes, kernel_size = 1)
-
+        self.nclasses = num_classes
+        self.final_conv = nn.Conv2d(64, num_classes if num_classes > 2 else 1, 
+                                    kernel_size=1)
 
     def forward(self, x):
         d_1, x = self.down_conv1(x)
@@ -110,6 +111,9 @@ class UNet(nn.Module):
         u_3 = self.up_conv3(u_2, d_2)
         u_4 = self.up_conv4(u_3, d_1)
         x = self.final_conv(u_4)
+        
+        if self.nclasses <= 2: 
+            x = x.squeeze(1)
         return x
     
 if __name__ == "__main__":

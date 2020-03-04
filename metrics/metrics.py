@@ -29,7 +29,11 @@ class IoU(Metrics):
 
     def calculate(self, output, target):
         ious = [0 for _ in range(self.nclasses)]
-        _, prediction = torch.max(output, dim=1)
+        
+        if self.nclasses > 2:
+            _, prediction = torch.max(output, dim=1)
+        else:
+            prediction = (output > 0).long()
 
         if self.ignore_index is not None:
             target_mask = (target == self.ignore_index).bool()
@@ -41,8 +45,8 @@ class IoU(Metrics):
             intersection = torch.sum(pred_c & target_c)
             union = torch.sum(pred_c | target_c)
             iou = (intersection.float() + 1e-6) / (union.float() + 1e-6)
-            ious[c] = iou.item()
-            
+            ious[c] = iou.item() / output.size(0)
+
         return ious
 
     def update(self, iou_per_batch):
