@@ -1,42 +1,57 @@
 import torch
 from torch.utils import data
 from torchvision import transforms
-import numpy as np
-from PIL import Image
-import os
 import pydicom as dicom
+
+from utils.utils import NormMaxMin
+
+import os
 import glob
-from utils.utils import rescale, NormMaxMin
-import matplotlib.pyplot as plt
 
-def split_string(ori_str, split_str):
-    assert len(ori_str) > len(split_str), "Len of original string with split string are not suitable!"
-    return ori_str.split(split_str)[1]
 
-class IRCAD(data.Dataset):
-    def __init__(self, root_path = None, type = 'image'):
+class IRCADSeries(data.Dataset):
+    def __init__(self, root_path=None):
         super().__init__()
         assert root_path is not None, "Missing root path, should be a path 3D-IRCAD dataset!"
-        self.type = type
         self.root_path = root_path
-        self.imgs_id = []
+        self.series_id = []
+        for folder_name in os.listdir(self.root_path):
+            img_lst = [os.path.join(self.root_path, folder_name, "PATIENT_DICOM", x) for x in sorted(
+                            os.listdir(os.path.join(self.root_path, folder_name,"PATIENT_DICOM")),
+                            key=lambda x: int(x.split('_')[-1]))]
+            self.series_id.append(img_lst)
+    
+    def __getitem__(self, index):
+        serie_id = self.series_id[index]
+        dicom_serie = [dicom.dcmread(x) for x in serie_id]
+        arr_serie = [x.pixel_array for x in dicom_serie]
+        arr_serie_tf = transforms.Compose([
+            transforms.ToTensor(),
+            NormMaxMin()
+        ])
+        arr_serie = [arr_serie_tf(x).unsqueeze(0) for x in arr_serie]
+        arr_serie = torch.cat(arr_serie)
+        
+        dicom_serie = [dicom.dcmread(x) for x in (serie_id.replace('PATIENT_DICOM',
+                        'MASKS_DICOM/liver'))]
+        mask_serie = [x.pixel_array for x in dicom_serie]
+        mask_serie_tf = transforms.Compose([
+        ])
+        mask_serie = [torch.Tensor(mask_serie_tf(x)).long() // 255 for x in mask_serie]
+        mask_serie = torch.cat(mask_serie)
+        return arr_serie, mask_serie
+        
+class IRCADSingle(data.Dataset):
+    def __init__(self, root_path=None):
+        super().__init__()
+        assert root_path is not None, "Missing root path, should be a path 3D-IRCAD dataset!"
+        self.root_path = root_path
         self.imgs_id = glob.glob(os.path.join(self.root_path, "3Dircadb1.[0-9]*/PATIENT_DICOM/image_[0-9]*"))
-            
-        '''
-        folder_list = [x for x in sorted(os.listdir(self.root_path))]
-        self.imgs_id = {}
-        for i in range(len(folder_list)):
-            self.image_path = os.path.join(self.root_path + "/" + folder_list[i], "PATIENT_DICOM")
-            self.mask_path = os.path.join(self.root_path + "/" + folder_list[i], "MASKS_DICOM" + "/" + object)
-            self.imgs_id[split_string(folder_list[i], "3Dircadb")] = [x for x in sorted(os.listdir(self.image_path))]
-        '''
         
     def __getitem__(self, index):
         img_id = self.imgs_id[index]
-
         dicom_img = dicom.dcmread(img_id)
         arr_img = dicom_img.pixel_array
-
         arr_img_tf = transforms.Compose([
             transforms.ToTensor(),
             NormMaxMin()
@@ -48,25 +63,45 @@ class IRCAD(data.Dataset):
         mask_img = dicom_img.pixel_array
         mask_img_tf = transforms.Compose([
         ])
-        mask_img = mask_img_tf(mask_img)
+        mask_img = torch.Tensor(mask_img_tf(mask_img)).long() // 255
         
-        plt.imshow(arr_img.squeeze(0))
-        plt.imshow(mask_img, alpha=0.5, origin='upper')
-        plt.show()
+        #plt.imshow(arr_img.squeeze(0))
+        #plt.imshow(mask_img, alpha=0.5, origin='upper')
+        #plt.show()
         
         return arr_img, mask_img
+
+    def __len__(self):
+        return len(self.imgs_id)
         
-        
-def main():
+def test():
     import argparse
+    import matplotlib.pyplot as plt
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--root")
     args = parser.parse_args()
-    dataset = IRCAD(root_path=args.root)
-    dataset.__getitem__(80)
+
+    dataset = IRCADSingle(root_path=args.root)
+
+    for img, mask in dataset:
+        plt.subplot(1, 2, 1)
+        plt.imshow(img.squeeze(0))
+        plt.subplot(1, 2, 2)
+        plt.imshow(mask)
+        plt.show()
+        plt.close()
+
+def another_test():
+    import argparse
+    import matplotlib.pyplot as plt
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root")
+    args = parser.parse_args()
+
+    dataset = IRCADSeries(root_path=args.root)
+    dataset.__getitem__(0)
 
 if __name__ == "__main__":
-    main()
-
-
-
+    another_test()

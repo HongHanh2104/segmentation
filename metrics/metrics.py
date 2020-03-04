@@ -21,7 +21,7 @@ class Metrics():
         pass
 
 class IoU(Metrics):
-    def __init__(self, nclasses, ignore_index):
+    def __init__(self, nclasses, ignore_index=None):
         super().__init__()
         self.nclasses = nclasses
         self.ignore_index = ignore_index
@@ -30,8 +30,11 @@ class IoU(Metrics):
     def calculate(self, output, target):
         ious = [0 for _ in range(self.nclasses)]
         _, prediction = torch.max(output, dim=1)
-        target_mask = (target == self.ignore_index).bool()
-        prediction[target_mask] = -1
+
+        if self.ignore_index is not None:
+            target_mask = (target == self.ignore_index).bool()
+            prediction[target_mask] = -1
+
         for c in range(self.nclasses):
             pred_c = prediction == c
             target_c = target == c
@@ -39,6 +42,7 @@ class IoU(Metrics):
             union = torch.sum(pred_c | target_c)
             iou = (intersection.float() + 1e-6) / (union.float() + 1e-6)
             ious[c] = iou.item()
+            
         return ious
 
     def update(self, iou_per_batch):

@@ -8,10 +8,11 @@ from tqdm import tqdm
 from torchnet import meter
 
 from datasets.sunrgbd import SUNRGBDDataset
+from datasets.ircad import IRCAD
 from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
-from utils.random import set_seed
+from utils.random_seed import set_seed
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -32,6 +33,7 @@ def train(config):
 
     # Get model information
     num_class = config["model"]["num_class"]
+    input_channel = config['model']['input_channel']
     method = config["model"]["method"]
 
     # Get model args
@@ -47,19 +49,23 @@ def train(config):
 
     # 1: Load datasets
     set_seed()
-    train_dataset = SUNRGBDDataset(root_path,
-                                    img_folder,
-                                    depth_folder,
-                                    label_folder)
-    # train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, 
-                                                               [len(train_dataset) - len(train_dataset) // 5, len(train_dataset) // 5])
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, num_workers=6, batch_size=1, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, num_workers=6, batch_size=1)
+    
+    # dataset = SUNRGBDDataset(root_path,
+    #                                 img_folder,
+    #                                 depth_folder,
+    #                                 label_folder)
+    # train_dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+
+    dataset = IRCAD(root_path='data/3Dircadb1')
+
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, 
+                                                               [len(dataset) - len(dataset) // 5, len(dataset) // 5])
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
 
     # 2: Define network
     set_seed()
-    net = UNet(num_class, method).to(device)
+    net = UNet(num_class, input_channel, method).to(device)
     print(net)
     
     # 3: Define loss
@@ -73,7 +79,7 @@ def train(config):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
                                                            factor=0.5, patience=5, verbose=True)
     # 5: Define metrics
-    metric = IoU(nclasses=num_class, ignore_index=-1)
+    metric = IoU(nclasses=num_class)
 
     # Train from pretrained if it is not None
     if (pretrained is not None):
@@ -88,6 +94,7 @@ def train(config):
                         optimier = optimizer,
                         scheduler = scheduler,
                         metric = metric)
+
     # 7: Start to train
     trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
 

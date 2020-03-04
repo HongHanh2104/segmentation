@@ -70,17 +70,17 @@ class Trainer():
         self.net.train()
         print("Training ........")
         progress_bar = tqdm(dataloader)
-        for i, (color_imgs, *label_imgs) in enumerate(progress_bar):
+        for i, (inp, lbl) in enumerate(progress_bar):
             # 1: Load img_inputs and labels 
-            color_imgs = color_imgs.to(self.device)
-            depth_imgs = label_imgs[0].to(self.device)
-            label_imgs = label_imgs[1].to(self.device)
+            inp = inp.to(self.device)
+            lbl = lbl.to(self.device)
+            # label_imgs = label_imgs[1].to(self.device)
             # 2: Clear gradients from previous iteration
             self.optimizer.zero_grad()
             # 3: Get network outputs 
-            outs = self.net(color_imgs)
+            outs = self.net(inp)
             # 4: Calculate the loss
-            loss = self.criterion(outs, label_imgs)
+            loss = self.criterion(outs, lbl)
             # 5: Calculate gradients
             loss.backward()
             # 6: Performing backpropagation
@@ -90,8 +90,8 @@ class Trainer():
             self.tsboard.update_loss('train', loss.item(), epoch * len(dataloader) + i)
             # 8: Update metric
             outs = outs.detach()
-            label_imgs = label_imgs.detach()
-            value = self.metric.calculate(outs, label_imgs)
+            lbl = lbl.detach()
+            value = self.metric.calculate(outs, lbl)
             self.metric.update(value)
         print(self.metric.summary())
 
@@ -102,33 +102,31 @@ class Trainer():
         self.net.eval()
         print("Validating ........")
         progress_bar = tqdm(dataloader)
-        for i, (color_imgs, *label_imgs) in enumerate(progress_bar):
+        for i, (inp, lbl) in enumerate(progress_bar):
             # 1: Load inputs and labels
-            color_imgs = color_imgs.to(self.device)
-            depth_imgs = label_imgs[0].to(self.device)
-            label_imgs = label_imgs[1].to(self.device)
+            inp = inp.to(self.device)
+            lbl = lbl.to(self.device)
 
             # 2: Get network outputs
-            outs = self.net(color_imgs)
+            outs = self.net(inp)
 
             # 3: Calculate the loss 
-            loss = self.criterion(outs, label_imgs)
+            loss = self.criterion(outs, lbl)
 
             # 4: Update loss
             running_loss.add(loss.item())
         
             # 5: Update metric
             outs = outs.detach()
-            label_imgs = label_imgs.detach()
-            value = self.metric.calculate(outs, label_imgs)
+            lbl = lbl.detach()
+            value = self.metric.calculate(outs, lbl)
             self.metric.update(value)
-            #print(val_metric)
-        # 5: Get average loss 
+
+        # Get average loss 
         avg_loss = running_loss.value()[0]
         print("Average Loss: ", avg_loss)
         self.val_loss.append(avg_loss)
         self.val_metric.append(self.metric.value())
-        #print("Average Metric:", self.metric.value())
         self.tsboard.update_loss('val', avg_loss, epoch)
 
         print(self.metric.summary())

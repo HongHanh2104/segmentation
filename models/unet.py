@@ -79,10 +79,10 @@ class MiddleBlock(nn.Module):
         return x
 
 class UNet(nn.Module):
-    def __init__(self, num_classes, method):
+    def __init__(self, num_classes, input_channel, method):
         super(UNet, self).__init__()
         
-        self.down_conv1 = EncoderBlock(3, 64)
+        self.down_conv1 = EncoderBlock(input_channel, 64)
         self.down_conv2 = EncoderBlock(64, 128)
         self.down_conv3 = EncoderBlock(128, 256)
         self.down_conv4 = EncoderBlock(256, 512)
@@ -114,7 +114,7 @@ class UNet(nn.Module):
     
 if __name__ == "__main__":
     dev = torch.device('cpu')
-    net = UNet(2, '').to(dev)
+    net = UNet(2, 3, '').to(dev)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
