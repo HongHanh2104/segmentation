@@ -70,7 +70,7 @@ def train(config):
                                 momentum=momentum, 
                                 weight_decay=weight_decay)
     
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
                                                            factor=0.5, patience=5, verbose=True)
     # 5: Define metrics
     metric = IoU(nclasses=num_class, ignore_index=-1)

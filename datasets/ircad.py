@@ -20,9 +20,8 @@ class IRCAD(data.Dataset):
         self.type = type
         self.root_path = root_path
         self.imgs_id = []
-        for name in glob.glob(os.path.join(self.root_path, "3Dircadb1.[0-9]*/PATIENT_DICOM/image_[0-9]*")):
-            self.imgs_id.append(name)
-
+        self.imgs_id = glob.glob(os.path.join(self.root_path, "3Dircadb1.[0-9]*/PATIENT_DICOM/image_[0-9]*"))
+            
         '''
         folder_list = [x for x in sorted(os.listdir(self.root_path))]
         self.imgs_id = {}
@@ -43,8 +42,6 @@ class IRCAD(data.Dataset):
             NormMaxMin()
         ])
         arr_img = arr_img_tf(arr_img)
-        #plt.imshow(arr_img.squeeze(0))
-        #plt.show()
 
         dicom_img = dicom.dcmread(img_id.replace('PATIENT_DICOM',
                                 'MASKS_DICOM/liver'))
@@ -53,6 +50,10 @@ class IRCAD(data.Dataset):
         ])
         mask_img = mask_img_tf(mask_img)
         
+        plt.imshow(arr_img.squeeze(0))
+        plt.imshow(mask_img, alpha=0.5, origin='upper')
+        plt.show()
+        
         return arr_img, mask_img
         
         
@@ -60,9 +61,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--root")
-    parser.add_argument("--type", default="image")
     args = parser.parse_args()
-    dataset = IRCAD(root_path=args.root, type=args.type)
+    dataset = IRCAD(root_path=args.root)
     dataset.__getitem__(80)
 
 if __name__ == "__main__":
