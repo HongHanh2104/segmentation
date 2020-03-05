@@ -29,14 +29,14 @@ dataset:
     train:
         name:                     IRCADSingle
         args:
-            root_path:            data/3Dircadb1/test
+            root_path:            data/3Dircadb1/train
         loader:
             batch_size:           1
             shuffle:              True
     val: 
         name:                     IRCADSingle
         args:
-            root_path:            data/3Dircadb1/test
+            root_path:            data/3Dircadb1/val
         loader:
             batch_size:           1
 trainer:
