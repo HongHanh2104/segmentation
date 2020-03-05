@@ -20,6 +20,12 @@ from utils.random_seed import set_seed
 import time
 import os
 
+def get_instance(config, **kwargs):
+    assert 'name' in config
+    config.setdefault('args', {})
+    if config['args'] is None: config['args'] = {}
+    return globals()[config['name']](**config['args'], **kwargs)
+
 def evaluate(config):
     dev_id = 'cuda:{}'.format(config['gpus']) \
             if torch.cuda.is_available() and config.get('gpus', None) is not None \
@@ -35,26 +41,16 @@ def evaluate(config):
     for item in ["model"]:
         config[item] = pretrained["config"][item]
 
-    # Get model information
-    num_class = config["model"]["num_class"]
-    input_channel = config['model']['input_channel']
-    method = config["model"]["method"]
-
     # 1: Load datasets
-    # dataset = SUNRGBDDataset(root_path,
-    #                                 img_folder,
-    #                                 depth_folder,
-    #                                 label_folder)
-
     dataset = IRCADSingle(root_path='data/3Dircadb1/test')
     dataloader = DataLoader(dataset, batch_size=1)
 
     # 2: Define network
-    net = UNet(num_class, input_channel, method).to(device)
+    net = get_instance(config['model']).to(device)
     net.load_state_dict(pretrained['model_state_dict'])
     
     # 5: Define metrics
-    metric = IoU(nclasses=num_class)
+    # metric = IoU(nclasses=num_class)
 
     for idx, (inp, lbl) in enumerate(tqdm(dataloader)):
         # Get network output
