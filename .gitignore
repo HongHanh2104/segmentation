@@ -63,3 +63,5 @@ target/
 data/*
 runs/*
 outputs/*
+backup/*
+vis/*

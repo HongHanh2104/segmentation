@@ -18,6 +18,7 @@ from metrics.metrics import IoU
 from utils.random_seed import set_seed
 
 import time
+import os
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -29,6 +30,7 @@ def train(config):
 
     # Get pretrained model
     pretrained_path = config["pretrained"]
+    output_dir = config['output']
     
     pretrained = None
     if (pretrained_path != None):
@@ -41,17 +43,6 @@ def train(config):
     input_channel = config['model']['input_channel']
     method = config["model"]["method"]
 
-    # Get model args
-    learning_rate = config["model"]["args"]["learning_rate"]
-    momentum = config["model"]["args"]["momentum"]
-    weight_decay = config["model"]["args"]["weight_decay"]
-    
-    # Get path
-    root_path = config["train"]["path"]["root"]
-    img_folder = config["train"]["path"]["img_folder"]
-    depth_folder = config["train"]["path"]["depth_folder"]
-    label_folder = config["train"]["path"]["label_folder"]
-
     # 1: Load datasets
     set_seed()
     
@@ -61,12 +52,7 @@ def train(config):
     #                                 label_folder)
     # train_dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-    dataset = IRCADSingle(root_path='data/3Dircadb1')
-
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, 
-                                                               [len(dataset) - len(dataset) // 5, len(dataset) // 5])
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
+    dataset = IRCADSingle(root_path='data/3Dircadb1/test')
 
     # 2: Define network
     set_seed()
@@ -80,23 +66,34 @@ def train(config):
     if (pretrained is not None):
         net.load_state_dict(pretrained['model_state_dict'])
 
-    for inp, lbl in train_dataset:
+    for idx, (inp, lbl) in enumerate(dataset):
         net.eval()
         start = time.time()
         out = net(inp.unsqueeze(0).to(device)).detach()
         print("Prediction time: %f" % (time.time()-start))
         
         out = out.cpu()
-        _, pred = torch.max(out, dim=1)
+        assert len(out.shape) in [3, 4]
+        if len(out.shape) == 4:
+            _, pred = torch.max(out, dim=1)
+        elif len(out.shape) == 3:
+            pred = (out > 0).long()
         pred = Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
 
+        plt.figure(figsize=(30, 10))
         plt.subplot(1, 3, 1)
         plt.imshow(inp.squeeze())
         plt.subplot(1, 3, 2)
         plt.imshow(lbl)
         plt.subplot(1, 3, 3)
         plt.imshow(pred)
-        plt.show()
+        plt.tight_layout()
+
+        if output_dir is not None:
+            os.makedirs(output_dir, exist_ok=True)
+            plt.savefig(os.path.join(output_dir, f'output_{idx:03d}'))
+        else:
+            plt.show()
         plt.close()
 
 if __name__ == "__main__":
@@ -104,6 +101,7 @@ if __name__ == "__main__":
     parser.add_argument('--config')
     parser.add_argument('--gpus', default=None)
     parser.add_argument('--weight')
+    parser.add_argument('--output', default=None)
 
     args = parser.parse_args()
 
@@ -111,5 +109,6 @@ if __name__ == "__main__":
     config = yaml.load(open(config_path, 'r'), Loader=yaml.Loader)
     config['gpus'] = args.gpus
     config['pretrained'] = args.weight
+    config['output'] = args.output
 
     train(config)
