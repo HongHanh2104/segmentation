@@ -30,9 +30,10 @@ class IoU(Metrics):
     def calculate(self, output, target):
         ious = [0 for _ in range(self.nclasses)]
         
-        if self.nclasses > 2:
+        assert self.nclasses > 0
+        if self.nclasses >= 2:
             _, prediction = torch.max(output, dim=1)
-        else:
+        elif self.nclasses == 1:
             prediction = (output.squeeze(1) > 0).long()
 
         if self.ignore_index is not None:

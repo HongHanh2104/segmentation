@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torch.utils import data
 from tqdm import tqdm
 from torchnet import meter
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from datasets.sunrgbd import SUNRGBDDataset

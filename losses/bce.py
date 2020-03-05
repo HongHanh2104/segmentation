@@ -8,7 +8,9 @@ class BCEWithLogitsLoss(nn.Module):
 
     def __call__(self, output, target):
         target = target.type_as(output)
-        return self.loss(output, target.unsqueeze(1))
+        if len(target.shape) == 3:
+            target = target.unsqueeze(1)
+        return self.loss(output, target)
 
 class WeightedBCEWithLogitsLoss(BCEWithLogitsLoss):
     def __init__(self, beta, **kwargs):

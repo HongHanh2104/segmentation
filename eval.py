@@ -65,16 +65,16 @@ def evaluate(config):
         
         # Post-process output for true prediction
         out = out.cpu()
-        assert len(out.shape) in [3, 4]
-        if len(out.shape) == 4: # BCHW
+        assert len(out.shape) == 4
+        if out.size(1) > 2:
             conf, pred = torch.max(out, dim=1)
-        elif len(out.shape) == 3: # BHW
-            conf = torch.sigmoid(out)
+        else:
+            conf = torch.sigmoid(out.squeeze(1))
             pred = (conf >= 0.5).long()
         pred = Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
 
         # Plot prediction
-        plt.figure(figsize=(30, 10))
+        plt.figure(figsize=(10, 10))
         plt.subplot(2, 2, 1)
         plt.imshow(inp.squeeze())
         plt.subplot(2, 2, 2)

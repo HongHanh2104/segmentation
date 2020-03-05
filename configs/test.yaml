@@ -3,19 +3,15 @@ pretrained:                       null
 model: 
     name:                         UNet
     args:
-        nclasses:                 2
+        nclasses:                 1
         input_nchannels:          1
         method:                   interpolate
 optimizer:
-    name:                         SGD
-    args:
-        lr:                       0.00001
-        momentum:                 0.9
-        weight_decay:             0.0005
+    name:                         Adam
 loss:
     name:                         WeightedBCEWithLogitsLoss
     args:
-        beta:                     5
+        beta:                     3
 metric:
     - name:                       IoU
       args:
