@@ -112,8 +112,6 @@ class UNet(nn.Module):
         u_4 = self.up_conv4(u_3, d_1)
         x = self.final_conv(u_4)
         
-        if self.nclasses <= 2: 
-            x = x.squeeze(1)
         return x
     
 if __name__ == "__main__":

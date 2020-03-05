@@ -15,11 +15,12 @@ from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
-from losses.bce import BCEWithLogitsLoss
+from losses.bce import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss
 
 def get_instance(config, **kwargs):
     assert 'name' in config
     config.setdefault('args', {})
+    if config['args'] is None: config['args'] = {}
     return globals()[config['name']](**config['args'], **kwargs)
 
 def train(config):
@@ -71,7 +72,7 @@ def train(config):
         model.load_state_dict(pretrained['model_state_dict'])
 
     # 3: Define loss
-    criterion = get_instance(config['loss'])
+    criterion = get_instance(config['loss']).to(device)
 
     # 4: Define Optimizer
     optimizer = get_instance(config['optimizer'], 

@@ -14,6 +14,8 @@ optimizer:
         weight_decay:             0.0005
 loss:
     name:                         BCEWithLogitsLoss
+    args:
+        # beta:                     1.2
 metric:
     - name:                       IoU
       args:
