@@ -8,6 +8,7 @@ from utils.utils import NormMaxMin
 import os
 import glob
 from pathlib import Path
+import re
 
 class IRCADSeries(data.Dataset):
     def __init__(self, root_path=None):
@@ -48,8 +49,15 @@ class IRCADSingle(data.Dataset):
     def __init__(self, root_path=None):
         super().__init__()
         assert root_path is not None, "Missing root path, should be a path 3D-IRCAD dataset!"
-        self.root_path = root_path
-        self.imgs_id = glob.glob(os.path.join(self.root_path, "3Dircadb1.[0-9]*/PATIENT_DICOM/image_[0-9]*"))
+        self.root_path = Path(root_path)
+        self.imgs_id = glob.glob(str(self.root_path / "3Dircadb1.[0-9]*/PATIENT_DICOM/image_[0-9]*"))
+        self.imgs_id = sorted(self.imgs_id, 
+                              key=lambda x: (int(re.match(r'.*3Dircadb1.(?P<patient_id>[0-9]+)/.*', x)
+                                              .group('patient_id')),
+                                             int(re.match(r'.*image_(?P<slice_id>[0-9]+)', x)
+                                              .group('slice_id')),
+                                            )
+                             )
         
     def __getitem__(self, index):
         img_id = self.imgs_id[index]
@@ -67,7 +75,10 @@ class IRCADSingle(data.Dataset):
         mask_img = dicom_img.pixel_array
         mask_img_tf = transforms.Compose([
         ])
-        mask_img = torch.Tensor(mask_img_tf(mask_img)).long() // 255
+        mask_img = torch.Tensor(mask_img_tf(mask_img))
+
+        max_value = int(torch.max(mask_img))
+        mask_img = mask_img.long() // (max_value if max_value > 0 else 1)
         
         return arr_img, mask_img
 
