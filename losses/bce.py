@@ -16,4 +16,4 @@ class WeightedBCEWithLogitsLoss(BCEWithLogitsLoss):
             self.beta = torch.Tensor([beta])
         if isinstance(beta, list):
             self.beta = torch.Tensor(beta)
-        super().__init__(pos_weight=self.beta.unsqueeze(-1), **kwargs)
+        super().__init__(pos_weight=self.beta, **kwargs)
