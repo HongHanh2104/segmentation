@@ -8,14 +8,16 @@ model:
         method:                   interpolate
 optimizer:
     name:                         Adam
+    args:
+        lr:                       0.00001
 loss:
     name:                         WeightedBCEWithLogitsLoss
     args:
-        beta:                     3
+        beta:                     5
 metric:
     - name:                       IoU
       args:
-        nclasses:                 2
+        nclasses:                 1
 scheduler:
     name:                         ReduceLROnPlateau
     args:
