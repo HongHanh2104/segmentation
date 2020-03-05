@@ -79,10 +79,10 @@ class MiddleBlock(nn.Module):
         return x
 
 class UNet(nn.Module):
-    def __init__(self, num_classes, input_channel, method):
+    def __init__(self, nclasses, input_nchannels, method):
         super(UNet, self).__init__()
         
-        self.down_conv1 = EncoderBlock(input_channel, 64)
+        self.down_conv1 = EncoderBlock(input_nchannels, 64)
         self.down_conv2 = EncoderBlock(64, 128)
         self.down_conv3 = EncoderBlock(128, 256)
         self.down_conv4 = EncoderBlock(256, 512)
@@ -94,8 +94,8 @@ class UNet(nn.Module):
         self.up_conv3 = DecoderBlock(256, 128, method)
         self.up_conv4 = DecoderBlock(128, 64, method)
         
-        self.nclasses = num_classes
-        self.final_conv = nn.Conv2d(64, num_classes if num_classes > 2 else 1, 
+        self.nclasses = nclasses
+        self.final_conv = nn.Conv2d(64, nclasses if nclasses > 2 else 1, 
                                     kernel_size=1)
 
     def forward(self, x):

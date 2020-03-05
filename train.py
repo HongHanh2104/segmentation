@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 from torch.utils import data
 from tqdm import tqdm
 from torchnet import meter
+from torch.optim import SGD
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from datasets.sunrgbd import SUNRGBDDataset
 from datasets.ircad import IRCADSingle
@@ -14,6 +16,11 @@ from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
 from losses.bce import BCEWithLogitsLoss
+
+def get_instance(config, **kwargs):
+    assert 'name' in config
+    config.setdefault('args', {})
+    return globals()[config['name']](**config['args'], **kwargs)
 
 def train(config):
     assert config is not None, "Do not have config file!"
@@ -32,22 +39,6 @@ def train(config):
         for item in ["model", "train"]:
             config[item] = pretrained["config"][item]
 
-    # Get model information
-    num_class = config["model"]["num_class"]
-    input_channel = config['model']['input_channel']
-    method = config["model"]["method"]
-
-    # Get model args
-    learning_rate = config["model"]["args"]["learning_rate"]
-    momentum = config["model"]["args"]["momentum"]
-    weight_decay = config["model"]["args"]["weight_decay"]
-    
-    # Get path
-    root_path = config["train"]["path"]["root"]
-    img_folder = config["train"]["path"]["img_folder"]
-    depth_folder = config["train"]["path"]["depth_folder"]
-    label_folder = config["train"]["path"]["label_folder"]
-
     # 1: Load datasets
     set_seed()
     
@@ -62,48 +53,51 @@ def train(config):
     # train_dataset, val_dataset = torch.utils.data.random_split(dataset, 
     #                                                            [len(dataset) - len(dataset) // 5, len(dataset) // 5])
 
-    train_dataset = IRCADSingle(root_path='data/3Dircadb1/train')
-    val_dataset = IRCADSingle(root_path='data/3Dircadb1/val')
+    train_dataset = get_instance(config['dataset']['train'])
+    val_dataset = get_instance(config['dataset']['val'])
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, 
+                                                   **config['dataset']['train']['loader'])
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, 
+                                                 **config['dataset']['val']['loader'])
 
     # 2: Define network
     set_seed()
-    net = UNet(num_class, input_channel, method).to(device)
-    print(net)
-    
-    # 3: Define loss
-    # criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
-    criterion = BCEWithLogitsLoss()
-
-    # 4: Define Optimizer & Scheduler 
-    optimizer = torch.optim.SGD(net.parameters(),
-                                lr=learning_rate, 
-                                momentum=momentum, 
-                                weight_decay=weight_decay)
-    
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
-                                                           factor=0.5, patience=5, verbose=True)
-    # 5: Define metrics
-    metric = IoU(nclasses=num_class)
+    model = get_instance(config['model']).to(device)
+    print(model)
 
     # Train from pretrained if it is not None
-    if (pretrained is not None):
-        net.load_state_dict(pretrained['model_state_dict'])
+    if pretrained is not None:
+        model.load_state_dict(pretrained['model_state_dict'])
+
+    # 3: Define loss
+    criterion = get_instance(config['loss'])
+
+    # 4: Define Optimizer
+    optimizer = get_instance(config['optimizer'], 
+                             params=model.parameters())
+    if pretrained is not None:
         optimizer.load_state_dict(pretrained['optimizer_state_dict'])
+    
+    # 5: Define Scheduler
+    scheduler = get_instance(config['scheduler'],
+                             optimizer=optimizer)
+
+    # 6: Define metrics
+    metric = get_instance(config['metric'][0])
 
     # 6: Create trainer
-    trainer = Trainer(device = device,
-                        config = config,
-                        net = net,
-                        criterion = criterion,
-                        optimier = optimizer,
-                        scheduler = scheduler,
-                        metric = metric)
+    trainer = Trainer(device=device,
+                      config=config,
+                      model=model,
+                      criterion=criterion,
+                      optimier=optimizer,
+                      scheduler=scheduler,
+                      metric=metric)
 
     # 7: Start to train
-    trainer.train(train_dataloader=train_dataloader, val_dataloader=val_dataloader)
+    trainer.train(train_dataloader=train_dataloader, 
+                  val_dataloader=val_dataloader)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -12,7 +12,7 @@ from loggers.tsboard import TensorboardHelper
 class Trainer():
     def __init__(self, device, 
                     config, 
-                    net, 
+                    model, 
                     criterion, 
                     optimier,
                     scheduler,
@@ -20,14 +20,14 @@ class Trainer():
         super(Trainer, self).__init__()
         self.config = config
         self.device = device
-        self.net = net
+        self.model = model
         self.criterion = criterion
         self.optimizer = optimier
         self.scheduler = scheduler
         self.metric = metric
         # Get arguments
-        self.nepochs = self.config["train"]["args"]["epochs"]
-        self.val_step = self.config['train']['log']['val_step']
+        self.nepochs = self.config['trainer']['nepochs']
+        self.val_step = self.config['trainer']['log']['val_step']
         self.best_loss = np.inf
         self.best_metric = 0.0
         self.val_loss = []
@@ -39,7 +39,7 @@ class Trainer():
         
         data = {
             "epoch": epoch,
-            "model_state_dict": self.net.state_dict(),
+            "model_state_dict": self.model.state_dict(),
             "optimizer_state_dict": self.optimizer.state_dict(),
             "config": self.config
         }
@@ -67,7 +67,7 @@ class Trainer():
         # 0: Record loss during training process 
         running_loss = meter.AverageValueMeter()
         self.metric.reset()
-        self.net.train()
+        self.model.train()
         print("Training ........")
         progress_bar = tqdm(dataloader)
         for i, (inp, lbl) in enumerate(progress_bar):
@@ -78,7 +78,7 @@ class Trainer():
             # 2: Clear gradients from previous iteration
             self.optimizer.zero_grad()
             # 3: Get network outputs 
-            outs = self.net(inp)
+            outs = self.model(inp)
             # 4: Calculate the loss
             loss = self.criterion(outs, lbl)
             # 5: Calculate gradients
@@ -99,7 +99,7 @@ class Trainer():
     def val_epoch(self, epoch, dataloader):
         running_loss = meter.AverageValueMeter()
         self.metric.reset()
-        self.net.eval()
+        self.model.eval()
         print("Validating ........")
         progress_bar = tqdm(dataloader)
         for i, (inp, lbl) in enumerate(progress_bar):
@@ -108,7 +108,7 @@ class Trainer():
             lbl = lbl.to(self.device)
 
             # 2: Get network outputs
-            outs = self.net(inp)
+            outs = self.model(inp)
 
             # 3: Calculate the loss 
             loss = self.criterion(outs, lbl)

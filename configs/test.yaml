@@ -1,28 +1,45 @@
-gpus: null
+gpus:                             null
+pretrained:                       null
 model: 
-    name:                         Unet
-    num_class:                    2
-    input_channel:                1
-    method:                       interpolate
+    name:                         UNet
     args:
-        learning_rate:            0.00001
+        nclasses:                 2
+        input_nchannels:          1
+        method:                   interpolate
+optimizer:
+    name:                         SGD
+    args:
+        lr:                       0.00001
         momentum:                 0.9
         weight_decay:             0.0005
-pretrained:                       null
-
-train: 
-    type:                         SUNRGBD                          
-    path: 
-        root:                     data/SUN-RGBD
-        img_folder:               SUNRGBD-train_images
-        depth_folder:             sunrgbd_train_depth
-        label_folder:             train13labels    
-    args: 
-        batch_size:               8
-        epochs:                   50
-        num_workers:              8
-        num_iters:                10
-        save_period:              10
-        early_stop:               10
+loss:
+    name:                         BCEWithLogitsLoss
+metric:
+    - name:                       IoU
+      args:
+        nclasses:                 2
+scheduler:
+    name:                         ReduceLROnPlateau
+    args:
+        mode:                     min
+        factor:                   0.5 
+        patience:                 5 
+        verbose:                  True
+dataset:
+    train:
+        name:                     IRCADSingle
+        args:
+            root_path:            data/3Dircadb1/train
+        loader:
+            batch_size:           1
+            shuffle:              True
+    val: 
+        name:                     IRCADSingle
+        args:
+            root_path:            data/3Dircadb1/val
+        loader:
+            batch_size:           1
+trainer:
+    nepochs:                      50
     log:
-        val_step: 1
+        val_step:                 1
