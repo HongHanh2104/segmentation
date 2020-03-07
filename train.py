@@ -16,6 +16,7 @@ from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
 from losses.crossentropy import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss, CrossEntropyLoss
+from losses.focalloss import FocalLoss
 
 def get_instance(config, **kwargs):
     assert 'name' in config
