@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn import CrossEntropyLoss
 
 class BCEWithLogitsLoss(nn.Module):
     def __init__(self, **kwargs):
@@ -19,3 +20,9 @@ class WeightedBCEWithLogitsLoss(BCEWithLogitsLoss):
         if isinstance(beta, list):
             self.beta = torch.Tensor(beta)
         super().__init__(pos_weight=self.beta, **kwargs)
+
+class CrossEntropyLoss(nn.CrossEntropyLoss):
+    def __init__(self, weight=None, **kwargs):
+        if weight is not None:
+            weight = torch.FloatTensor(weight)
+        super().__init__(weight, **kwargs)

@@ -50,9 +50,10 @@ def evaluate(config):
     net.load_state_dict(pretrained['model_state_dict'])
     
     # 5: Define metrics
-    # metric = IoU(nclasses=num_class)
+    metric = IoU(nclasses=2)
 
-    for idx, (inp, lbl) in enumerate(tqdm(dataloader)):
+    tbar = tqdm(dataloader)
+    for idx, (inp, lbl) in enumerate(tbar):
         # Get network output
         net.eval()
         start = time.time()
@@ -62,38 +63,44 @@ def evaluate(config):
         # Post-process output for true prediction
         out = out.cpu()
         assert len(out.shape) == 4
-        if out.size(1) > 2:
+        if out.size(1) >= 2:
             conf, pred = torch.max(out, dim=1)
         else:
             conf = torch.sigmoid(out.squeeze(1))
             pred = (conf >= 0.5).long()
+        iou = metric.calculate(out, lbl)
+        metric.update(iou)
+        tbar.set_description_str(f'{iou}')
         pred = Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
 
-        # Plot prediction
-        plt.figure(figsize=(10, 10))
-        plt.subplot(2, 2, 1)
-        plt.imshow(inp.squeeze())
-        plt.subplot(2, 2, 2)
-        plt.imshow(lbl.squeeze(0))
-        plt.subplot(2, 2, 3)
-        plt.imshow(conf.squeeze(0))
-        plt.subplot(2, 2, 4)
-        plt.imshow(pred)
-        plt.tight_layout()
+        if config['vis']:
+            # Plot prediction
+            plt.figure(figsize=(10, 10))
+            plt.subplot(2, 2, 1)
+            plt.imshow(inp.squeeze())
+            plt.subplot(2, 2, 2)
+            plt.imshow(lbl.squeeze(0))
+            plt.subplot(2, 2, 3)
+            plt.imshow(conf.squeeze(0))
+            plt.subplot(2, 2, 4)
+            plt.imshow(pred)
+            plt.tight_layout()
 
-        # Show plot (or save, depending on output_path specification)
-        if output_dir is not None:
-            os.makedirs(output_dir, exist_ok=True)
-            plt.savefig(os.path.join(output_dir, f'output_{idx:03d}'))
-        else:
-            plt.show()
-        plt.close()
+            # Show plot (or save, depending on output_path specification)
+            if output_dir is not None:
+                os.makedirs(output_dir, exist_ok=True)
+                plt.savefig(os.path.join(output_dir, f'output_{idx:03d}'))
+            else:
+                plt.show()
+            plt.close()
+    print(metric.summary())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpus', default=None)
     parser.add_argument('--weight')
     parser.add_argument('--output', default=None)
+    parser.add_argument('--vis', action='store_true')
 
     args = parser.parse_args()
 
@@ -101,5 +108,6 @@ if __name__ == "__main__":
     config['gpus'] = args.gpus
     config['pretrained'] = args.weight
     config['output'] = args.output
+    config['vis'] = args.vis
 
     evaluate(config)

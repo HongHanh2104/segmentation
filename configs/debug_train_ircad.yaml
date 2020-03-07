@@ -3,21 +3,22 @@ pretrained:                       null
 model: 
     name:                         UNet
     args:
-        nclasses:                 1
+        nclasses:                 2
         input_nchannels:          1
         method:                   interpolate
 optimizer:
     name:                         Adam
     args:
-        lr:                       0.00001
+        lr:                       0.000005
 loss:
-    name:                         WeightedBCEWithLogitsLoss
+    name:                         CrossEntropyLoss
     args:
-        beta:                     5
+        # beta:                     5
+        weight:                   [1.0, 5.0]
 metric:
     - name:                       IoU
       args:
-        nclasses:                 1
+        nclasses:                 2
 scheduler:
     name:                         ReduceLROnPlateau
     args:

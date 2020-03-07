@@ -8,7 +8,6 @@ from tqdm import tqdm
 from torchnet import meter
 from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.nn import CrossEntropyLoss
 
 from datasets.sunrgbd import SUNRGBDDataset
 from datasets.ircad import IRCADSingle
@@ -16,7 +15,7 @@ from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
-from losses.bce import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss
+from losses.crossentropy import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss, CrossEntropyLoss
 
 def get_instance(config, **kwargs):
     assert 'name' in config
