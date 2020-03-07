@@ -79,7 +79,7 @@ class IRCADSingle(data.Dataset):
 
         max_value = int(torch.max(mask_img))
         mask_img = mask_img.long() // (max_value if max_value > 0 else 1)
-        
+        #print(arr_img.shape)
         return arr_img, mask_img
 
     def __len__(self):
@@ -113,12 +113,14 @@ def another_test():
     args = parser.parse_args()
 
     dataset = IRCADSeries(root_path=args.root)
+    
     for img, mask in dataset:
         plt.imshow(tv.utils.make_grid(img, nrow=15).permute(1, 2, 0))
         plt.imshow(tv.utils.make_grid(mask.unsqueeze(1), nrow=15).squeeze().permute(1, 2, 0) * 255, alpha=0.5)
         plt.tight_layout()
         plt.show()
         plt.close()
-
+    
+    
 if __name__ == "__main__":
     another_test()
