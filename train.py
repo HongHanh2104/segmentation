@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torch.utils import data
 from tqdm import tqdm
 from torchnet import meter
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from datasets.sunrgbd import SUNRGBDDataset
@@ -15,7 +15,7 @@ from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
-from losses.bce import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss
+from losses.crossentropy import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss, CrossEntropyLoss
 
 def get_instance(config, **kwargs):
     assert 'name' in config
@@ -42,23 +42,11 @@ def train(config):
 
     # 1: Load datasets
     set_seed()
-    
-    # dataset = SUNRGBDDataset(root_path,
-    #                                 img_folder,
-    #                                 depth_folder,
-    #                                 label_folder)
-    # train_dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
-
-    # dataset = IRCADSingle(root_path='data/3Dircadb1')
-
-    # train_dataset, val_dataset = torch.utils.data.random_split(dataset, 
-    #                                                            [len(dataset) - len(dataset) // 5, len(dataset) // 5])
-
     train_dataset = get_instance(config['dataset']['train'])
-    val_dataset = get_instance(config['dataset']['val'])
-
     train_dataloader = torch.utils.data.DataLoader(train_dataset, 
                                                    **config['dataset']['train']['loader'])
+
+    val_dataset = get_instance(config['dataset']['val'])
     val_dataloader = torch.utils.data.DataLoader(val_dataset, 
                                                  **config['dataset']['val']['loader'])
 

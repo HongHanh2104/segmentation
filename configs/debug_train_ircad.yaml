@@ -1,0 +1,46 @@
+gpus:                             null
+pretrained:                       null
+model: 
+    name:                         UNet
+    args:
+        nclasses:                 2
+        input_nchannels:          1
+        method:                   interpolate
+optimizer:
+    name:                         Adam
+    args:
+        lr:                       0.000005
+loss:
+    name:                         CrossEntropyLoss
+    args:
+        # beta:                     5
+        weight:                   [1.0, 5.0]
+metric:
+    - name:                       IoU
+      args:
+        nclasses:                 2
+scheduler:
+    name:                         ReduceLROnPlateau
+    args:
+        mode:                     min
+        factor:                   0.5 
+        patience:                 5
+        verbose:                  True
+dataset:
+    train:
+        name:                     IRCADSingle
+        args:
+            root_path:            data/3Dircadb1/test
+        loader:
+            batch_size:           1
+            shuffle:              True
+    val: 
+        name:                     IRCADSingle
+        args:
+            root_path:            data/3Dircadb1/test
+        loader:
+            batch_size:           1
+trainer:
+    nepochs:                      50
+    log:
+        val_step:                 1

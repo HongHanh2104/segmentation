@@ -7,15 +7,14 @@ model:
         input_nchannels:          1
         method:                   interpolate
 optimizer:
-    name:                         SGD
+    name:                         Adam
     args:
-        lr:                       0.00001
-        momentum:                 0.9
-        weight_decay:             0.0005
+        lr:                       0.000005
 loss:
-    name:                         BCEWithLogitsLoss
+    name:                         CrossEntropyLoss
     args:
-        # beta:                     1.2
+        # beta:                     5
+        weight:                   [1.0, 5.0]
 metric:
     - name:                       IoU
       args:

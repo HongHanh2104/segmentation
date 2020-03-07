@@ -23,14 +23,16 @@ class Metrics():
 class IoU(Metrics):
     def __init__(self, nclasses, ignore_index=None):
         super().__init__()
-        self.nclasses = nclasses
+        assert nclasses > 0
+        self.binary = nclasses == 1
+        self.nclasses = nclasses + self.binary
         self.ignore_index = ignore_index
         self.reset()
 
     def calculate(self, output, target):
         ious = [0 for _ in range(self.nclasses)]
         
-        if self.nclasses > 2:
+        if not self.binary:
             _, prediction = torch.max(output, dim=1)
         else:
             prediction = (output.squeeze(1) > 0).long()

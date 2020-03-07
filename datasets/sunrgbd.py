@@ -52,7 +52,7 @@ class SUNRGBDDataset(data.Dataset):
         ])
         depth_img = depth_img_tf(depth_img)
 
-        return color_img, depth_img, label_img
+        return color_img, label_img
 
     def __len__(self):
         return len(self.img_ids)
