@@ -5,32 +5,35 @@ import glob
 import time
 from pathlib import Path
 import numpy as np
+from tqdm import tqdm
+import re
 
-def load_nii_image(root_path=None,input_folder=None):
-    assert root_path is not None, "Missing the input path!"
-    root_path = Path(root_path)
-    path = root_path / input_folder
+FIXED_DIRECTION = [1, 0, 0, 0, 1, 0, 0, 0]
 
+def get_patients(path):
+    assert path is not None, "Missing the input path!"
+    assert path.is_dir(), 'Invalid input path!'
+
+    regex = re.compile(r'.*volume-(?P<id>[0-9]+).*')
     def get_sort_key(x):
-        return int(x.split("-")[-1].split(".")[0])
+        _id = regex.match(str(x)).group('id')
+        return int(_id)
 
-    nii_list = sorted(glob.glob(str(path / "volume-*")),
-                      key=get_sort_key)
-    return nii_list
+    patients = map(str, path.glob('volume-*'))
+    patients = sorted(patients, key=get_sort_key)
+    return patients
 
-def get_nii_image(nii_serie, i, type):
-    img_path = ""
-    if (type == "PATIENT"):
-        img_path = nii_serie[i]
-    elif (type == "LABEL"):
-        img_path = nii_serie[i].replace("volume", "segmentation")
-    
+def get_nii_image(img_path):    
     image = sitk.ReadImage(img_path)
-    if image.GetPixelID() > 4:
-        arr = sitk.GetArrayFromImage(image).astype(np.int16)
-        return sitk.GetImageFromArray(arr)
-    else:
-        return image
+    # if image.GetPixelID() > 4:
+    #     arr = sitk.GetArrayFromImage(image).astype(np.int16)
+    #     image = sitk.GetImageFromArray(arr)
+
+    castFilter = sitk.CastImageFilter()
+    castFilter.SetOutputPixelType(sitk.sitkInt16)
+    image = castFilter.Execute(image)
+
+    return image
 
 def read_information(filename):
     reader = sitk.ImageFileReader()
@@ -40,17 +43,18 @@ def read_information(filename):
         v = reader.GetMetaData(k)
         print("({0}) = = \"{1}\"".format(k, v))
 
-def set_series_tag_values(nii_image):
-    direction = nii_image.GetDirection()
+def set_series_tag_values(nii_image, name):
+    # direction = nii_image.GetDirection()
+    direction = FIXED_DIRECTION
     modification_time = time.strftime("%H%M%S")
     modification_date = time.strftime("%Y%m%d")
     series_tag_values = [("0008|0031",modification_time), # Series Time
                          ("0008|0021",modification_date), # Series Date
-                         ("0008|0008","DERIVED\\SECONDARY"), # Image Type
+                         ("0008|0008","ORIGINAL\\PRIMARY"), # Image Type
                          ("0020|000e", "1.2.826.0.1.3680043.2.1125."+modification_date+".1"+modification_time), # Series Instance UID
                          ("0020|0037", '\\'.join(map(str, (direction[0], direction[3], direction[6],# Image Orientation (Patient)
                                                     direction[1],direction[4],direction[7])))),
-                         ("0008|103e", "Created-SimpleITK")] # Series Description
+                         ("0008|103e", name)] # Series Description
     return series_tag_values
 
 def writeSlices(img_serie, series_tag_values, i, final_folder):
@@ -85,30 +89,25 @@ def convert():
     parser.add_argument('--type')
     args = parser.parse_args()
 
-    nii_list = load_nii_image(args.root, args.input)
-    type_file = args.input.split('_')[-1]
-    output_path = os.path.join(args.root, args.output)
-    type_file_folder = os.path.join(output_path, type_file)
-    if os.path.exists(output_path) == False:
-        os.mkdir(output_path)
-    
-    if os.path.exists(os.path.join(type_file_folder)) == False:
-        os.mkdir(os.path.join(type_file_folder))
+    root = Path(args.root)
+    patients = get_patients(root / args.input)
+    output_path = root / args.output / args.input
+    output_path.mkdir(parents=True, exist_ok=True)
 
-    for i in range(len(nii_list)):
-        patient = int(nii_list[i].split('-')[-1].split('.')[0])
-        patient_folder = os.path.join(type_file_folder, "LiTS" + str(patient), args.type)
-        if os.path.exists(patient_folder) == False:
-            os.makedirs(patient_folder)
+    for patient in tqdm(patients):
+        patient_id = int(patient.split('-')[-1].split('.')[0])
+        patient_folder = output_path / f'LiTS{patient_id:03d}' / args.type
+        patient_folder.mkdir(parents=True, exist_ok=True)
 
-        nii_image = get_nii_image(nii_list, i, args.type) 
+        img_path = patient if args.type == 'PATIENT' \
+                           else patient.replace("volume", "segmentation")
+        nii_image = get_nii_image(img_path)
+        # read_information(img_path)
         
-        series_tag_values = set_series_tag_values(nii_image)
-        
-               
+        series_tag_values = set_series_tag_values(nii_image, f'{args.type}_{patient_id}')
+
         list(map(lambda k: writeSlices(img_serie=nii_image, series_tag_values=series_tag_values, 
                 i=k, final_folder=patient_folder), range(nii_image.GetDepth())))
-        print("done {0}".format(str(patient)))
 
 def test():
     path = '../Data/LiTS/LiTS_train/segmentation-38.nii'
