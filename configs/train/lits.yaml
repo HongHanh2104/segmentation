@@ -3,22 +3,22 @@ pretrained:                       null
 model: 
     name:                         UNet
     args:
-        nclasses:                 2
+        nclasses:                 3
         input_nchannels:          1
         method:                   interpolate
 optimizer:
     name:                         Adam
     args:
-        lr:                       0.000005
+        lr:                       0.00001
 loss:
     name:                         CrossEntropyLoss
     args:
         # beta:                     5
-        weight:                   [1.0, 5.0]
+        # weight:                   [1.0, 5.0]
 metric:
     - name:                       IoU
       args:
-        nclasses:                 2
+        nclasses:                 3
 scheduler:
     name:                         ReduceLROnPlateau
     args:
@@ -28,16 +28,16 @@ scheduler:
         verbose:                  True
 dataset:
     train:
-        name:                     IRCADSingle
+        name:                     LiTSSingle
         args:
-            root_path:            data/3Dircadb1/train
+            root_path:            data/LiTS/train
         loader:
             batch_size:           1
             shuffle:              True
     val: 
-        name:                     IRCADSingle
+        name:                     LiTSSingle
         args:
-            root_path:            data/3Dircadb1/val
+            root_path:            data/LiTS/val
         loader:
             batch_size:           1
 trainer:

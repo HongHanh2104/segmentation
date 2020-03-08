@@ -11,6 +11,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from datasets.sunrgbd import SUNRGBDDataset
 from datasets.ircad import IRCADSingle
+from datasets.lits import LiTSSingle
 from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU

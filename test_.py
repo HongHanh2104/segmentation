@@ -1,3 +1,3 @@
-from datasets.ircad import test as test
+from datasets.lits import test as test
 
 test()

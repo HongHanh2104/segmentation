@@ -19,7 +19,7 @@ def get_patients(path):
         _id = regex.match(str(x)).group('id')
         return int(_id)
 
-    patients = map(str, path.glob('volume-*'))
+    patients = map(str, path.glob('*volume-*'))
     patients = sorted(patients, key=get_sort_key)
     return patients
 
@@ -77,34 +77,28 @@ def writeSlices(img_serie, series_tag_values, i, final_folder):
     # Write to the output directory and add the extension dcm, to force writing in DICOM format.
     writer = sitk.ImageFileWriter()
     writer.KeepOriginalImageUIDOn()
-    writer.SetFileName(os.path.join(final_folder,str(i)+'.dcm'))
+    writer.SetFileName(os.path.join(final_folder / f'{i:03d}.dcm'))
     writer.Execute(image_slice)
 
 
-def convert():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--root')
-    parser.add_argument('--input')
-    parser.add_argument('--output')
-    parser.add_argument('--type')
-    args = parser.parse_args()
-
-    root = Path(args.root)
-    patients = get_patients(root / args.input)
-    output_path = root / args.output / args.input
+def convert(_root, _output, _input, _type):
+    print(f'Working on ({_root}/{_input}, {_type}), output to {_root}/{_output}')
+    root = Path(_root)
+    patients = get_patients(root / _input)
+    output_path = root / _output / _input
     output_path.mkdir(parents=True, exist_ok=True)
 
     for patient in tqdm(patients):
         patient_id = int(patient.split('-')[-1].split('.')[0])
-        patient_folder = output_path / f'LiTS{patient_id:03d}' / args.type
+        patient_folder = output_path / f'LiTS{patient_id:03d}' / _type
         patient_folder.mkdir(parents=True, exist_ok=True)
 
-        img_path = patient if args.type == 'PATIENT' \
+        img_path = patient if _type == 'PATIENT' \
                            else patient.replace("volume", "segmentation")
         nii_image = get_nii_image(img_path)
         # read_information(img_path)
         
-        series_tag_values = set_series_tag_values(nii_image, f'{args.type}_{patient_id}')
+        series_tag_values = set_series_tag_values(nii_image, f'{_type}_{patient_id}')
 
         list(map(lambda k: writeSlices(img_serie=nii_image, series_tag_values=series_tag_values, 
                 i=k, final_folder=patient_folder), range(nii_image.GetDepth())))
@@ -116,4 +110,23 @@ def test():
         print("ahihi")
        
 if __name__ == "__main__":
-    convert()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--root')
+    parser.add_argument('--output')
+    parser.add_argument('--input', default=None)
+    parser.add_argument('--type', default=None)
+    args = parser.parse_args()
+
+    if args.input is None:
+        for _input in ['train', 'val']:
+            if args.type is None:
+                for _type in ['PATIENT', 'LABEL']:
+                    convert(args.root, args.output, _input, _type)
+            else:
+                convert(args.root, args.output, _input, args.type)
+    else:
+        if args.type is None:
+            for _type in ['PATIENT', 'LABEL']:
+                convert(args.root, args.output, args.input, _type)
+        else:
+            convert(args.root, args.output, args.input, args.type)
