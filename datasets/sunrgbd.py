@@ -6,13 +6,16 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from utils.utils import execute_filename, rescale, NormMaxMin
+from utils.utils import execute_filename, rescale
+from transforms.normalize import NormMaxMin
+from transforms.crop import RandomCrop
 
 class SUNRGBDDataset(data.Dataset):
     def __init__(self,  root_path = None,
                         color_img_folder = None,
                         depth_img_folder = None,
-                        label_img_folder = None):
+                        label_img_folder = None,
+                        is_train=True):
         super(SUNRGBDDataset, None).__init__()
         
         assert root_path is not None, "Missing root path, should be a path to SUNRGBD dataset!"
@@ -28,6 +31,8 @@ class SUNRGBDDataset(data.Dataset):
         self.label_img_path = os.path.join(self.root_path, label_img_folder)
 
         self.img_ids = [execute_filename(os.path.splitext(x)[0]) for x in sorted(os.listdir(self.color_img_path))]
+
+        self.is_train = is_train
                 
     def __getitem__(self, index):
         img_id = self.img_ids[index]
@@ -52,7 +57,11 @@ class SUNRGBDDataset(data.Dataset):
         ])
         depth_img = depth_img_tf(depth_img)
 
-        return color_img, label_img
+        if self.is_train:
+            r0, r1, c0, c1 = RandomCrop(128)(color_img)
+            return color_img[..., r0:r1, c0:c1], label_img[..., r0:r1, c0:c1]
+        else:
+            return color_img, label_img
 
     def __len__(self):
         return len(self.img_ids)

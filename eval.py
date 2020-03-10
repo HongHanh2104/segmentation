@@ -42,7 +42,7 @@ def evaluate(config):
         config[item] = pretrained["config"][item]
 
     # 1: Load datasets
-    dataset = IRCADSingle(root_path='data/3Dircadb1/test')
+    dataset = IRCADSingle(root_path='data/3Dircadb1/test', is_train=False)
     dataloader = DataLoader(dataset, batch_size=1)
 
     # 2: Define network
