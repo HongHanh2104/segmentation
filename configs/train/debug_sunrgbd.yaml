@@ -44,6 +44,7 @@ dataset:
             color_img_folder:     SUNRGBD-test_images
             depth_img_folder:     sunrgbd_test_depth
             label_img_folder:     test13labels
+            is_train:             False
         loader:
             batch_size:           1
 trainer:

@@ -34,6 +34,7 @@ dataset:
         loader:
             batch_size:           1
             shuffle:              True
+            # pin_memory:           True
     val: 
         name:                     LiTSSingle
         args:

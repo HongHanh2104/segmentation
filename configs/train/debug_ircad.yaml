@@ -9,12 +9,13 @@ model:
 optimizer:
     name:                         Adam
     args:
-        lr:                       0.00001
+        lr:                       0.000005
 loss:
-    name:                         CrossEntropyLoss
+    name:                         FocalLoss
     args:
         # beta:                     5
-        weight:                   [1.0, 5.0]
+        # weight:                   [0.1, 1.0]
+        gamma:                    5
 metric:
     - name:                       IoU
       args:
@@ -30,14 +31,15 @@ dataset:
     train:
         name:                     IRCADSingle
         args:
-            root_path:            data/3Dircadb1/test
+            root_path:            data/3Dircadb1/train
         loader:
             batch_size:           1
             shuffle:              True
     val: 
         name:                     IRCADSingle
         args:
-            root_path:            data/3Dircadb1/test
+            root_path:            data/3Dircadb1/val
+            is_train:             False
         loader:
             batch_size:           1
 trainer:
