@@ -1,23 +1,21 @@
-import argparse 
 import yaml
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils import data
+from torch.optim import SGD, Adam, RMSprop
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 from torchnet import meter
-from torch.optim import SGD, Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from datasets.sunrgbd import SUNRGBDDataset
-from datasets.ircad import IRCADSingle
-from datasets.lits import LiTSSingle
-from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
-from losses.crossentropy import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss, CrossEntropyLoss
-from losses.focalloss import FocalLoss
+from losses import *
+from datasets import *
+from models import *
+
+import argparse 
 
 def get_instance(config, **kwargs):
     assert 'name' in config
@@ -87,6 +85,7 @@ def train(config):
                       metric=metric)
 
     # 7: Start to train
+    set_seed()
     trainer.train(train_dataloader=train_dataloader, 
                   val_dataloader=val_dataloader)
 
