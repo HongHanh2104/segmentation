@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ToyModel(nn.Module):
-    def __init__(self, nfeatures, nclasses):
+    def __init__(self, nchannels, nfeatures, nclasses):
         super(ToyModel, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(3, nfeatures, kernel_size=3, padding=1),
+            nn.Conv2d(nchannels, nfeatures, kernel_size=3, padding=1),
             nn.ReLU()
         )
         self.cls = nn.Sequential(
