@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils import data
+import torch.nn.functional as F
 from tqdm import tqdm
 from torchnet import meter
 import numpy as np
@@ -64,7 +65,7 @@ def evaluate(config):
         out = out.cpu()
         assert len(out.shape) == 4
         if out.size(1) >= 2:
-            conf, pred = torch.max(out, dim=1)
+            conf, pred = torch.max(F.softmax(out,dim=1), dim=1)
         else:
             conf = torch.sigmoid(out.squeeze(1))
             pred = (conf >= 0.5).long()
@@ -81,7 +82,7 @@ def evaluate(config):
             plt.subplot(2, 2, 2)
             plt.imshow(lbl.squeeze(0))
             plt.subplot(2, 2, 3)
-            plt.imshow(conf.squeeze(0))
+            plt.imshow(conf.squeeze(0), vmin=0.0, vmax=1.0)
             plt.subplot(2, 2, 4)
             plt.imshow(pred)
             plt.tight_layout()
