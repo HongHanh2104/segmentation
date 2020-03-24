@@ -8,6 +8,7 @@ import os
 import datetime
 
 from loggers.tsboard import TensorboardHelper
+from utils.debug import plot_grad_flow
 
 class Trainer():
     def __init__(self, device, 
@@ -83,6 +84,7 @@ class Trainer():
             loss = self.criterion(outs, lbl)
             # 5: Calculate gradients
             loss.backward()
+            # plot_grad_flow(self.model.named_parameters(), f'epoch{epoch:02d}_iter{i:04d}')
             # 6: Performing backpropagation
             self.optimizer.step()
             # 7: Update loss 
