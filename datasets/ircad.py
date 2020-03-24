@@ -79,7 +79,7 @@ class IRCADSingle(data.Dataset):
         arr_img = dicom_img.pixel_array
         arr_img_tf = tvtf.Compose([
             tvtf.ToTensor(),
-            NormMaxMin()
+            NormMaxMin(),
         ])
         arr_img = arr_img_tf(arr_img)
 

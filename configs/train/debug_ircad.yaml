@@ -1,21 +1,22 @@
 gpus:                             null
 pretrained:                       null
 model: 
-    name:                         UNet
+    name:                         ResidUNet
     args:
         nclasses:                 2
-        input_nchannels:          1
-        method:                   interpolate
+        in_channels:              1
+        # depth:                    1
 optimizer:
     name:                         Adam
     args:
-        lr:                       0.000005
+        lr:                       0.00001
 loss:
     name:                         FocalLoss
     args:
         # beta:                     5
         # weight:                   [0.1, 1.0]
-        gamma:                    5
+        gamma:                    2
+        # alpha:                    0.25
 metric:
     - name:                       IoU
       args:

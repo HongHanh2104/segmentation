@@ -4,39 +4,30 @@ from torch.autograd import Variable
 from torch.utils import data
 from torch.nn import functional as F
 
-from datasets import IRCADSingle
-from models import UNet
+from datasets import IRCADSingle, IRCADSeries
+from models.toymodel import ToyModel
 from losses import FocalLoss
 from torch.nn import CrossEntropyLoss
 
 # torch.random.manual_seed(3698)
 # torch.backends.cudnn.deterministic = True
 
-dataset = IRCADSingle('data/3Dircadb1/train', is_train=False)
+dataset = IRCADSeries('data/3Dircadb1/train', is_train=False)
 dataloader = data.DataLoader(dataset, batch_size=1, num_workers=0, shuffle=False)
 
-model = UNet(2, 1, 'interpolate').cuda().eval()
-model.load_state_dict(torch.load('backup/toyweights.pth'))
+# model = UNet(2, 1, 'interpolate').cuda().eval()
+# model.load_state_dict(torch.load('backup/UNet2D-Single-CE-Adam-5e6_2020-03-06_07_06_50/best_metric.pth')['model_state_dict'])
+model = ToyModel(1, 256, 2).cuda().eval()
 ce = CrossEntropyLoss()
-fc = FocalLoss()
+fc = FocalLoss(gamma=5, alpha=15)
 
-for img, lbl in dataloader:
+for img, lbl in dataloader:    
     img = img.cuda()
     lbl = lbl.cuda()
-    out = model(img)
+    print(img.shape, lbl.shape)
+    input()
 
-    print(ce(out, lbl), fc(out, lbl))
-    
-    if out.dim()>2:
-        out = out.view(out.size(0), out.size(1), -1)    # N,C,H,W => N,C,H*W
-        out = out.transpose(1, 2)                       # N,C,H*W => N,H*W,C
-        out = out.contiguous().view(-1, out.size(2))    # N,H*W,C => N*H*W,C
-    lbl = lbl.view(-1,1) # N*H*W,1
-
-    logpt = F.log_softmax(out, dim=1)
-    logpt = logpt.gather(1, lbl)
-    logpt = logpt.view(-1) # N*H*W,
-    pt = Variable(logpt.data.exp())
-    print(pt)
-
-    break
+    for x, y in zip(img[0,:-1], img[0,1:]):
+        x = x.unsqueeze(0)
+        
+        x = model.conv(x)
