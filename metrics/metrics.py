@@ -1,5 +1,6 @@
-import torch 
+import torch
 import numpy as np
+
 
 class Metrics():
     def __init__(self):
@@ -12,13 +13,14 @@ class Metrics():
         pass
 
     def reset(self):
-        pass 
+        pass
 
     def value(self):
         pass
 
     def summary(self):
         pass
+
 
 class IoU(Metrics):
     def __init__(self, nclasses, ignore_index=None):
@@ -31,7 +33,7 @@ class IoU(Metrics):
 
     def calculate(self, output, target):
         ious = [0 for _ in range(self.nclasses)]
-        
+
         if not self.binary:
             _, prediction = torch.max(output, dim=1)
         else:
@@ -53,7 +55,7 @@ class IoU(Metrics):
 
     def update(self, iou_per_batch):
         self.mean_class.append(iou_per_batch)
-    
+
     def value(self):
         return np.mean(self.mean_class)
 
@@ -62,6 +64,7 @@ class IoU(Metrics):
 
     def summary(self):
         return np.mean(self.mean_class, axis=0)
+
 
 if __name__ == "__main__":
     nclasses = 3
@@ -84,22 +87,21 @@ if __name__ == "__main__":
 
     output = torch.Tensor([
         [
-            [[1, 0], [0 , 1]],
-            [[0, 1], [0 , 0]],
-            [[0, 0], [1 , 0]]
+            [[1, 0], [0, 1]],
+            [[0, 1], [0, 0]],
+            [[0, 0], [1, 0]]
         ],
         [
-            [[1, 0], [0 , 1]],
-            [[0, 1], [0 , 0]],
-            [[0, 0], [1 , 0]]
+            [[1, 0], [0, 1]],
+            [[0, 1], [0, 0]],
+            [[0, 0], [1, 0]]
         ],
         [
-            [[1, 0], [0 , 1]],
-            [[0, 1], [0 , 0]],
-            [[0, 0], [1 , 0]]
+            [[1, 0], [0, 1]],
+            [[0, 1], [0, 0]],
+            [[0, 0], [1, 0]]
         ]
     ]).float()
 
     metric = IoU(nclasses=nclasses, ignore_index=-1)
     print(metric.calculate(output, target))
-

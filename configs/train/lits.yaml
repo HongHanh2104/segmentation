@@ -1,46 +1,47 @@
-gpus:                             null
-pretrained:                       null
-model: 
-    name:                         UNet
+gpus: null
+pretrained: null
+model:
+    name: UNet
     args:
-        nclasses:                 3
-        input_nchannels:          1
-        method:                   interpolate
+        nclasses: 3
+        input_nchannels: 1
+        method: interpolate
 optimizer:
-    name:                         Adam
+    name: Adam
     args:
-        lr:                       0.00001
+        lr: 0.00001
 loss:
-    name:                         CrossEntropyLoss
+    name: CrossEntropyLoss
     args:
         # beta:                     5
         # weight:                   [1.0, 5.0]
 metric:
-    - name:                       IoU
+    - name: IoU
       args:
-        nclasses:                 3
+          nclasses: 3
 scheduler:
-    name:                         ReduceLROnPlateau
+    name: ReduceLROnPlateau
     args:
-        mode:                     min
-        factor:                   0.5 
-        patience:                 5 
-        verbose:                  True
+        mode: min
+        factor: 0.5
+        patience: 5
+        verbose: True
 dataset:
     train:
-        name:                     LiTSSingle
+        name: LiTSSingle
         args:
-            root_path:            data/LiTS/train
+            root_path: data/LiTS/train
         loader:
-            batch_size:           1
-            shuffle:              True
-    val: 
-        name:                     LiTSSingle
+            batch_size: 1
+            shuffle: True
+            # pin_memory:           True
+    val:
+        name: LiTSSingle
         args:
-            root_path:            data/LiTS/val
+            root_path: data/LiTS/val
         loader:
-            batch_size:           1
+            batch_size: 1
 trainer:
-    nepochs:                      50
+    nepochs: 50
     log:
-        val_step:                 1
+        val_step: 1

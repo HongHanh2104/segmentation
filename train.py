@@ -1,41 +1,42 @@
-import argparse 
 import yaml
-import torch 
+import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils import data
+from torch.optim import SGD, Adam, RMSprop
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 from torchnet import meter
-from torch.optim import SGD, Adam
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from datasets.sunrgbd import SUNRGBDDataset
-from datasets.ircad import IRCADSingle
-from datasets.lits import LiTSSingle
-from models.unet import UNet
 from workers.trainer import Trainer
 from metrics.metrics import IoU
 from utils.random_seed import set_seed
-from losses.crossentropy import BCEWithLogitsLoss, WeightedBCEWithLogitsLoss, CrossEntropyLoss
-from losses.focalloss import FocalLoss
+from losses import *
+from datasets import *
+from models import *
+
+import argparse
+
 
 def get_instance(config, **kwargs):
     assert 'name' in config
     config.setdefault('args', {})
-    if config['args'] is None: config['args'] = {}
+    if config['args'] is None:
+        config['args'] = {}
     return globals()[config['name']](**config['args'], **kwargs)
+
 
 def train(config):
     assert config is not None, "Do not have config file!"
-    
+
     dev_id = 'cuda:{}'.format(config['gpus']) \
-            if torch.cuda.is_available() and config.get('gpus', None) is not None \
-            else 'cpu'
+        if torch.cuda.is_available() and config.get('gpus', None) is not None \
+        else 'cpu'
     device = torch.device(dev_id)
 
     # Get pretrained model
     pretrained_path = config["pretrained"]
-    
+
     pretrained = None
     if (pretrained_path != None):
         pretrained = torch.load(pretrained_path, map_location=dev_id)
@@ -45,11 +46,11 @@ def train(config):
     # 1: Load datasets
     set_seed()
     train_dataset = get_instance(config['dataset']['train'])
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, 
+    train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                    **config['dataset']['train']['loader'])
 
     val_dataset = get_instance(config['dataset']['val'])
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, 
+    val_dataloader = torch.utils.data.DataLoader(val_dataset,
                                                  **config['dataset']['val']['loader'])
 
     # 2: Define network
@@ -65,11 +66,11 @@ def train(config):
     criterion = get_instance(config['loss']).to(device)
 
     # 4: Define Optimizer
-    optimizer = get_instance(config['optimizer'], 
+    optimizer = get_instance(config['optimizer'],
                              params=model.parameters())
     if pretrained is not None:
         optimizer.load_state_dict(pretrained['optimizer_state_dict'])
-    
+
     # 5: Define Scheduler
     scheduler = get_instance(config['scheduler'],
                              optimizer=optimizer)
@@ -87,8 +88,10 @@ def train(config):
                       metric=metric)
 
     # 7: Start to train
-    trainer.train(train_dataloader=train_dataloader, 
+    set_seed()
+    trainer.train(train_dataloader=train_dataloader,
                   val_dataloader=val_dataloader)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
