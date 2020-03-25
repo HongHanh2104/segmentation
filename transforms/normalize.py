@@ -1,5 +1,6 @@
 import torch
 
+
 class NormMaxMin:
     def __call__(self, x):
         m = torch.min(x)

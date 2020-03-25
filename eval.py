@@ -1,6 +1,6 @@
-import argparse 
+import argparse
 import yaml
-import torch 
+import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils import data
@@ -21,22 +21,25 @@ from utils.random_seed import set_seed
 import time
 import os
 
+
 def get_instance(config, **kwargs):
     assert 'name' in config
     config.setdefault('args', {})
-    if config['args'] is None: config['args'] = {}
+    if config['args'] is None:
+        config['args'] = {}
     return globals()[config['name']](**config['args'], **kwargs)
+
 
 def evaluate(config):
     dev_id = 'cuda:{}'.format(config['gpus']) \
-            if torch.cuda.is_available() and config.get('gpus', None) is not None \
-            else 'cpu'
+        if torch.cuda.is_available() and config.get('gpus', None) is not None \
+        else 'cpu'
     device = torch.device(dev_id)
 
     # Get pretrained model
     pretrained_path = config["pretrained"]
     output_dir = config['output']
-    
+
     assert os.path.exists(pretrained_path)
     pretrained = torch.load(pretrained_path, map_location=dev_id)
     for item in ["model"]:
@@ -49,7 +52,7 @@ def evaluate(config):
     # 2: Define network
     net = get_instance(config['model']).to(device)
     net.load_state_dict(pretrained['model_state_dict'])
-    
+
     # 5: Define metrics
     metric = IoU(nclasses=2)
 
@@ -60,12 +63,12 @@ def evaluate(config):
         start = time.time()
         out = net(inp.to(device)).detach()
         # print("Prediction time: %f" % (time.time()-start))
-        
+
         # Post-process output for true prediction
         out = out.cpu()
         assert len(out.shape) == 4
         if out.size(1) >= 2:
-            conf, pred = torch.max(F.softmax(out,dim=1), dim=1)
+            conf, pred = torch.max(F.softmax(out, dim=1), dim=1)
         else:
             conf = torch.sigmoid(out.squeeze(1))
             pred = (conf >= 0.5).long()
@@ -95,6 +98,7 @@ def evaluate(config):
                 plt.show()
             plt.close()
     print(metric.summary())
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

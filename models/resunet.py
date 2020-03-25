@@ -4,6 +4,7 @@ import torch.nn.init as init
 import torch.nn.functional as F
 import torchvision
 
+
 class ConvBlock(nn.Module):
     """
     Helper module that consists of a Conv -> BN -> ReLU
@@ -11,7 +12,8 @@ class ConvBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, padding=1, kernel_size=3, stride=1, with_nonlinearity=True):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, padding=padding, kernel_size=kernel_size, stride=stride)
+        self.conv = nn.Conv2d(in_channels, out_channels,
+                              padding=padding, kernel_size=kernel_size, stride=stride)
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
         self.with_nonlinearity = with_nonlinearity
@@ -51,7 +53,8 @@ class UpBlockForUNetWithResNet50(nn.Module):
             up_conv_out_channels = out_channels
 
         if upsampling_method == "conv_transpose":
-            self.upsample = nn.ConvTranspose2d(up_conv_in_channels, up_conv_out_channels, kernel_size=2, stride=2)
+            self.upsample = nn.ConvTranspose2d(
+                up_conv_in_channels, up_conv_out_channels, kernel_size=2, stride=2)
         elif upsampling_method == "bilinear":
             self.upsample = nn.Sequential(
                 nn.Upsample(mode='bilinear', scale_factor=2),
@@ -67,27 +70,29 @@ class UpBlockForUNetWithResNet50(nn.Module):
         :return: upsampled feature map
         """
         x = self.upsample(up_x)
-        
+
         dH = down_x.size()[2] - x.size()[2]
         dW = down_x.size()[3] - x.size()[3]
         x = F.pad(x, (dW // 2, dW - dW // 2,
-                        dH // 2, dH - dH //2))
+                      dH // 2, dH - dH // 2))
 
         x = torch.cat([x, down_x], 1)
         x = self.conv_block_1(x)
         x = self.conv_block_2(x)
         return x
 
+
 class ResidUNet(nn.Module):
     DEPTH = 6
 
     def __init__(self, in_channels, nclasses):
         super().__init__()
-        
+
         resnet = torchvision.models.resnet.resnet50(pretrained=True)
         down_blocks = []
         self.input_block = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=3, kernel_size=1, padding=0),
+            nn.Conv2d(in_channels=in_channels, out_channels=3,
+                      kernel_size=1, padding=0),
             nn.Sequential(*list(resnet.children()))[:3]
         )
         self.input_pool = list(resnet.children())[3]
@@ -95,9 +100,9 @@ class ResidUNet(nn.Module):
             if isinstance(bottleneck, nn.Sequential):
                 down_blocks.append(bottleneck)
         self.down_blocks = nn.ModuleList(down_blocks)
-        
+
         self.bridge = Bridge(2048, 2048)
-        
+
         up_blocks = []
         up_blocks.append(UpBlockForUNetWithResNet50(2048, 1024))
         up_blocks.append(UpBlockForUNetWithResNet50(1024, 512))
@@ -109,7 +114,7 @@ class ResidUNet(nn.Module):
         self.up_blocks = nn.ModuleList(up_blocks)
 
         self.out = nn.Conv2d(64, nclasses, kernel_size=1, stride=1)
-        
+
         self.freeze_bn()
 
     def forward(self, x, with_output_feature_map=False):
@@ -137,10 +142,12 @@ class ResidUNet(nn.Module):
             return x, output_feature_map
         else:
             return x
-        
+
     def freeze_bn(self):
         for module in self.modules():
-            if isinstance(module, nn.BatchNorm2d): module.eval()
+            if isinstance(module, nn.BatchNorm2d):
+                module.eval()
+
 
 if __name__ == "__main__":
     dev = torch.device('cuda')
@@ -150,11 +157,11 @@ if __name__ == "__main__":
 
     for iter_id in range(100):
         inps = torch.rand(4, 1, 100, 100).to(dev)
-        lbls = torch.randint(low = 0, high = 2, size = (4, 100, 100)).to(dev)
+        lbls = torch.randint(low=0, high=2, size=(4, 100, 100)).to(dev)
 
         outs = net(inps)
         loss = criterion(outs, lbls)
         loss.backward()
         optimizer.step()
-        
+
         print(iter_id, loss.item())

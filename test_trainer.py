@@ -18,20 +18,21 @@ if __name__ == "__main__":
     net = ToyModel(nfeatures=nfeatures, nclasses=nclasses)
     criterion = nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
     optimizer = optim.Adam(net.parameters())
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', 
-                                                        factor=0.5, patience=2, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min',
+                                                     factor=0.5, patience=2, verbose=True)
     metric = IoU(nclasses=13, ignore_index=-1)
-    trainer = Trainer(device, config, net, criterion, optimizer, scheduler, metric)
+    trainer = Trainer(device, config, net, criterion,
+                      optimizer, scheduler, metric)
 
     train_dataset = [(torch.randn(size=(3, 100, 100)),
-                    torch.randn(size=(100, 100)),
-                    torch.randint(low=-1, high=13, size=(100, 100)).long())
-                    for _ in range(99)]
+                      torch.randn(size=(100, 100)),
+                      torch.randint(low=-1, high=13, size=(100, 100)).long())
+                     for _ in range(99)]
     train_dataloader = data.DataLoader(train_dataset, batch_size=4)
 
     test_dataset = [(torch.randn(size=(3, 100, 100)),
-                    torch.randn(size=(100, 100)),
-                    torch.randint(low=-1, high=13, size=(100, 100)).long())
+                     torch.randn(size=(100, 100)),
+                     torch.randint(low=-1, high=13, size=(100, 100)).long())
                     for _ in range(99)]
     test_dataloader = data.DataLoader(test_dataset, batch_size=4)
 

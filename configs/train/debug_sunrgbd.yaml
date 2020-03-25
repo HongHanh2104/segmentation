@@ -1,53 +1,53 @@
-gpus:                             null
-pretrained:                       null
-model: 
-    name:                         UNet
+gpus: null
+pretrained: null
+model:
+    name: UNet
     args:
-        nclasses:                 13
-        input_nchannels:          3
-        method:                   interpolate
+        nclasses: 13
+        input_nchannels: 3
+        method: interpolate
 optimizer:
-    name:                         Adam
+    name: Adam
     args:
-        lr:                       0.00001
+        lr: 0.00001
 loss:
-    name:                         CrossEntropyLoss
+    name: CrossEntropyLoss
     args:
-        ignore_index:             -1
+        ignore_index: -1
 metric:
-    - name:                       IoU
+    - name: IoU
       args:
-        nclasses:                 13
-        ignore_index:             -1
+          nclasses: 13
+          ignore_index: -1
 scheduler:
-    name:                         ReduceLROnPlateau
+    name: ReduceLROnPlateau
     args:
-        mode:                     min
-        factor:                   0.5 
-        patience:                 5 
-        verbose:                  True
+        mode: min
+        factor: 0.5
+        patience: 5
+        verbose: True
 dataset:
     train:
-        name:                     SUNRGBDDataset
+        name: SUNRGBDDataset
         args:
-            root_path:            data/SUN-RGBD
-            color_img_folder:     SUNRGBD-train_images
-            depth_img_folder:     sunrgbd_train_depth
-            label_img_folder:     train13labels
+            root_path: data/SUN-RGBD
+            color_img_folder: SUNRGBD-train_images
+            depth_img_folder: sunrgbd_train_depth
+            label_img_folder: train13labels
         loader:
-            batch_size:           1
-            shuffle:              True
-    val: 
-        name:                     SUNRGBDDataset
+            batch_size: 1
+            shuffle: True
+    val:
+        name: SUNRGBDDataset
         args:
-            root_path:            data/SUN-RGBD
-            color_img_folder:     SUNRGBD-test_images
-            depth_img_folder:     sunrgbd_test_depth
-            label_img_folder:     test13labels
-            is_train:             False
+            root_path: data/SUN-RGBD
+            color_img_folder: SUNRGBD-test_images
+            depth_img_folder: sunrgbd_test_depth
+            label_img_folder: test13labels
+            is_train: False
         loader:
-            batch_size:           1
+            batch_size: 1
 trainer:
-    nepochs:                      50
+    nepochs: 50
     log:
-        val_step:                 1
+        val_step: 1

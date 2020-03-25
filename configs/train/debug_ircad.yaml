@@ -1,49 +1,49 @@
-gpus:                             null
-pretrained:                       null
-model: 
-    name:                         ResidUNet
+gpus: null
+pretrained: null
+model:
+    name: ResidUNet
     args:
-        nclasses:                 2
-        in_channels:              1
+        nclasses: 2
+        in_channels: 1
         # depth:                    1
 optimizer:
-    name:                         Adam
+    name: Adam
     args:
-        lr:                       0.00001
+        lr: 0.00001
 loss:
-    name:                         FocalLoss
+    name: FocalLoss
     args:
         # beta:                     5
         # weight:                   [0.1, 1.0]
-        gamma:                    2
+        gamma: 2
         # alpha:                    0.25
 metric:
-    - name:                       IoU
+    - name: IoU
       args:
-        nclasses:                 2
+          nclasses: 2
 scheduler:
-    name:                         ReduceLROnPlateau
+    name: ReduceLROnPlateau
     args:
-        mode:                     min
-        factor:                   0.5 
-        patience:                 5
-        verbose:                  True
+        mode: min
+        factor: 0.5
+        patience: 5
+        verbose: True
 dataset:
     train:
-        name:                     IRCADSingle
+        name: IRCADSingle
         args:
-            root_path:            data/3Dircadb1/train
+            root_path: data/3Dircadb1/train
         loader:
-            batch_size:           1
-            shuffle:              True
-    val: 
-        name:                     IRCADSingle
+            batch_size: 1
+            shuffle: True
+    val:
+        name: IRCADSingle
         args:
-            root_path:            data/3Dircadb1/val
-            is_train:             False
+            root_path: data/3Dircadb1/val
+            is_train: False
         loader:
-            batch_size:           1
+            batch_size: 1
 trainer:
-    nepochs:                      50
+    nepochs: 50
     log:
-        val_step:                 1
+        val_step: 1

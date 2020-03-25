@@ -1,7 +1,7 @@
-import os 
+import os
 import argparse
 from PIL import Image
-import torch 
+import torch
 from torchvision import transforms
 from models.toymodel import ToyModel
 from models.unet import UNet
@@ -13,6 +13,7 @@ import pydicom as dicom
 from utils.image import load_image_as_tensor
 from utils.utils import NormMaxMin
 
+
 @torch.no_grad()
 def predict(net, inp):
     net.eval()
@@ -21,14 +22,16 @@ def predict(net, inp):
     print("Prediction time: %f" % (time.time()-start))
     return out
 
+
 def post_process(out):
     out = out.cpu()
     _, pred = torch.max(out, dim=1)
     return Image.fromarray(pred.squeeze(0).numpy().astype(np.uint8))
 
+
 def infer(pretrained_path, input_path, output_path=None, gpus=None):
     dev_id = f'cuda:{gpus}' if torch.cuda.is_available() \
-                               and gpus is not None \
+             and gpus is not None \
              else 'cpu'
     device = torch.device(dev_id)
 
@@ -41,14 +44,14 @@ def infer(pretrained_path, input_path, output_path=None, gpus=None):
 
     net = UNet(nclasses, input_channel, method).to(device)
     net.load_state_dict(pretrained['model_state_dict'])
-    
-    # 2: Load image 
+
+    # 2: Load image
     # input_img = load_image_as_tensor(input_path).unsqueeze(0).to(device)
     input_img = transforms.Compose([
         transforms.ToTensor(),
         NormMaxMin()
     ])(dicom.dcmread(input_path).pixel_array).unsqueeze(0)
-    
+
     # 3: Predict the image
     out = predict(net=net,
                   inp=input_img)
@@ -64,7 +67,7 @@ def infer(pretrained_path, input_path, output_path=None, gpus=None):
         plt.imshow(pred)
         plt.show()
         plt.close()
-    
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -78,6 +81,7 @@ def main():
           input_path=args.input,
           output_path=args.output,
           gpus=args.gpus)
+
 
 if __name__ == "__main__":
     main()
