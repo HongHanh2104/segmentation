@@ -9,11 +9,11 @@ from tqdm import tqdm
 from torchnet import meter
 
 from workers.trainer import Trainer
-from metrics.metrics import IoU
 from utils.random_seed import set_seed
 from losses import *
 from datasets import *
 from models import *
+from metrics import *
 
 import argparse
 
@@ -28,6 +28,8 @@ def get_instance(config, **kwargs):
 
 def train(config):
     assert config is not None, "Do not have config file!"
+
+    print(config)
 
     dev_id = 'cuda:{}'.format(config['gpus']) \
         if torch.cuda.is_available() and config.get('gpus', None) is not None \
@@ -56,7 +58,6 @@ def train(config):
     # 2: Define network
     set_seed()
     model = get_instance(config['model']).to(device)
-    print(model)
 
     # Train from pretrained if it is not None
     if pretrained is not None:
@@ -76,7 +77,8 @@ def train(config):
                              optimizer=optimizer)
 
     # 6: Define metrics
-    metric = get_instance(config['metric'][0])
+    metric = {mcfg['name']: get_instance(mcfg)
+              for mcfg in config['metric']}
 
     # 6: Create trainer
     trainer = Trainer(device=device,
