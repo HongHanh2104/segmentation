@@ -1,52 +1,57 @@
+from efficientnet_pytorch import EfficientNet
+from efficientnet_pytorch.utils import url_map, get_model_params
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 
 class DecoderBlock(nn.Module):
     def __init__(self, inputs, outputs, concats, method):
         super(DecoderBlock, self).__init__()
         self.method = method
         # Using deconv method
-        self.up_transpose = nn.ConvTranspose2d(inputs, concats, kernel_size = 2, stride = 2)
+        self.up_transpose = nn.ConvTranspose2d(
+            inputs, outputs, kernel_size=2, stride=2)
         self.up_conv = nn.Sequential(
-            nn.Conv2d(2 * concats, outputs, kernel_size = 3, padding = 1),
+            nn.Conv2d(outputs + concats, outputs, kernel_size=3, padding=1),
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
-            nn.Conv2d(outputs, outputs, kernel_size = 3, padding = 1),
+            nn.Conv2d(outputs, outputs, kernel_size=3, padding=1),
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
         )
-    
+
     def forward(self, x, x_copy):
         # print('Input:', x.shape, x_copy.shape)
         x = self.up_transpose(x)
         # print('Up:', x.shape)
         if self.method == 'interpolate':
-            x = F.interpolate(x, size = (x_copy.size(2), x_copy.size(3)),
-                                mode = 'bilinear', align_corners = True)
+            x = F.interpolate(x, size=(x_copy.size(2), x_copy.size(3)),
+                              mode='bilinear', align_corners=True)
         else:
             # for different sizes
             diffX = x_copy.size()[3] - x.size()[3]
             diffY = x_copy.size()[2] - x.size()[2]
-            x = F.pad(x, (diffX // 2, diffX - diffX //2,
-                        diffY // 2, diffX - diffY //2))
+            x = F.pad(x, (diffX // 2, diffX - diffX // 2,
+                          diffY // 2, diffX - diffY // 2))
         #print('Scale:', x.shape)
 
         # Concatenate
-        x = torch.cat([x_copy, x], dim = 1)
+        x = torch.cat([x_copy, x], dim=1)
         #print('Concat', x.shape)
         x = self.up_conv(x)
         #print('UpConv:', x.shape)
         return x
 
+
 class MiddleBlock(nn.Module):
     def __init__(self, inputs, outputs):
         super(MiddleBlock, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(inputs, outputs, kernel_size = 3, padding = 1),
+            nn.Conv2d(inputs, outputs, kernel_size=3, padding=1),
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
-            nn.Conv2d(outputs, outputs, kernel_size = 3, padding = 1),
+            nn.Conv2d(outputs, outputs, kernel_size=3, padding=1),
             nn.BatchNorm2d(outputs),
             nn.ReLU(),
         )
@@ -57,8 +62,6 @@ class MiddleBlock(nn.Module):
         #print('Middle:', x.shape)
         return x
 
-from efficientnet_pytorch import EfficientNet
-from efficientnet_pytorch.utils import url_map, get_model_params
 
 efficient_net_encoders = {
     "efficientnet-b0": {
@@ -103,10 +106,12 @@ efficient_net_encoders = {
     }
 }
 
+
 class EfficientNetEncoder(EfficientNet):
     def __init__(self, stage_idxs, out_channels, model_name, depth=5):
 
-        blocks_args, global_params = get_model_params(model_name, override_params=None)
+        blocks_args, global_params = get_model_params(
+            model_name, override_params=None)
         super().__init__(blocks_args, global_params)
 
         self._stage_idxs = stage_idxs
@@ -140,7 +145,8 @@ class EfficientNetEncoder(EfficientNet):
             # Block stages need drop_connect rate
             else:
                 for module in stages[i]:
-                    drop_connect = drop_connect_rate * block_number / len(self._blocks)
+                    drop_connect = drop_connect_rate * \
+                        block_number / len(self._blocks)
                     block_number += 1.
                     x = module(x, drop_connect)
             features.append(x)
@@ -151,43 +157,47 @@ class EfficientNetEncoder(EfficientNet):
         state_dict.pop("_fc.weight")
         super().load_state_dict(state_dict, **kwargs)
 
+
 class EfficientUNet(nn.Module):
-    def __init__(self, nclasses, input_nchannels, method, version):
+    def __init__(self, nclasses, in_channels, version, method=''):
         super().__init__()
-        
-        self.effnet = EfficientNetEncoder(**efficient_net_encoders[f'efficientnet-{version}'])
-        self.middle_block = MiddleBlock(320, 320)
+        self.init_conv = nn.Conv2d(in_channels, 3, kernel_size=1, padding=0)
+        self.effnet = EfficientNetEncoder(
+            **efficient_net_encoders[f'efficientnet-{version}'])
+        self.middle_block = MiddleBlock(320, 640)
         self.up_conv = nn.ModuleList([
-            DecoderBlock(320, 512, 320, method),
-            DecoderBlock(512, 256, 112, method),
-            DecoderBlock(256, 128, 40, method),
-            DecoderBlock(128, 64, 24, method),
-            DecoderBlock(64, 32, 32, method),
-            DecoderBlock(32, 1, 3, method)
+            DecoderBlock(640, 320, 320, method),
+            DecoderBlock(320, 112, 112, method),
+            DecoderBlock(112, 40, 40, method),
+            DecoderBlock(40, 24, 24, method),
+            DecoderBlock(24, 32, 32, method),
+            DecoderBlock(32, 64, 3, method)
         ])
         self.final_conv = nn.Conv2d(64, nclasses, kernel_size=1)
 
     def forward(self, x):
+        x = self.init_conv(x)
         enc_fts = self.effnet(x)
         x = self.middle_block(enc_fts[-1])
         enc_fts = enc_fts[::-1]
         for enc_ft, upconv in zip(enc_fts, self.up_conv):
             x = upconv(x, enc_ft)
         return self.final_conv(x)
-    
+
+
 if __name__ == "__main__":
-    dev = torch.device('cpu')
-    net = UNet(2, 3, '').to(dev)
+    dev = torch.device('cuda')
+    net = EfficientUNet(2, 3, '', 'b0').to(dev)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
     for iter_id in range(100):
-        inps = torch.rand(4, 3, 512, 512).to(dev)
-        lbls = torch.randint(low = 0, high = 2, size = (4, 512, 512)).to(dev)
+        inps = torch.rand(2, 3, 512, 512).to(dev)
+        lbls = torch.randint(low=0, high=2, size=(2, 512, 512)).to(dev)
 
         outs = net(inps)
         loss = criterion(outs, lbls)
         loss.backward()
         optimizer.step()
-        
+
         print(iter_id, loss.item())
