@@ -32,7 +32,8 @@ class IoU(Metrics):
         self.reset()
 
     def calculate(self, output, target):
-        ious = [0 for _ in range(self.nclasses)]
+        batch_size = output.size(0)
+        ious = [[0 for _ in range(self.nclasses)] for _ in range(batch_size)]
 
         if not self.binary:
             _, prediction = torch.max(output, dim=1)
@@ -43,18 +44,19 @@ class IoU(Metrics):
             target_mask = (target == self.ignore_index).bool()
             prediction[target_mask] = -1
 
-        for c in range(self.nclasses):
-            pred_c = prediction == c
-            target_c = target == c
-            intersection = torch.sum(pred_c & target_c)
-            union = torch.sum(pred_c | target_c)
-            iou = (intersection.float() + 1e-6) / (union.float() + 1e-6)
-            ious[c] = iou.item() / output.size(0)
+        for i, (p, t) in enumerate(zip(prediction, target)):
+            for c in range(self.nclasses):
+                pred_c = p == c
+                target_c = t == c
+                intersection = torch.sum(pred_c & target_c)
+                union = torch.sum(pred_c | target_c)
+                iou = (intersection.float() + 1e-6) / (union.float() + 1e-6)
+                ious[i][c] = iou.item()
 
         return ious
 
-    def update(self, iou_per_batch):
-        self.mean_class.append(iou_per_batch)
+    def update(self, value):
+        self.mean_class.extend(value)
 
     def value(self):
         return np.mean(self.mean_class)
