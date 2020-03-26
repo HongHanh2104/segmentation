@@ -1,22 +1,22 @@
 gpus: null
 pretrained: null
 model:
-    name: ResidUNet
+    name: EfficientUNet
     args:
         nclasses: 2
         in_channels: 1
-        # depth:                    1
+        version: b0
 optimizer:
     name: Adam
     args:
         lr: 0.00001
 loss:
-    name: FocalLoss
+    name: CrossEntropyLoss
     args:
-        # beta:                     5
-        # weight:                   [0.1, 1.0]
-        gamma: 2
-        # alpha:                    0.25
+        # beta: 5
+        # weight: [0.1, 1.0]
+        # gamma: 2
+        # alpha: 0.25
 metric:
     - name: IoU
       args:
@@ -34,7 +34,7 @@ dataset:
         args:
             root_path: data/3Dircadb1/train
         loader:
-            batch_size: 1
+            batch_size: 2
             shuffle: True
     val:
         name: IRCADSingle
