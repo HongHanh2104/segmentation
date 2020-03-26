@@ -61,7 +61,7 @@ target/
 
 # Project data
 data/*
-runs/*
 outputs/*
-backup/*
 vis/*
+run/*
+*.pth
