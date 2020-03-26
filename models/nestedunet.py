@@ -1,6 +1,7 @@
-import torch 
-import torch.nn as nn 
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
+
 
 class Conv2dBlock(nn.Module):
     norm_map = {
@@ -39,9 +40,10 @@ class Conv2dBlock(nn.Module):
     def forward(self, x):
         return self.norm(self.activation(self.conv(x)))
 
-class Conv2dLayer(nn.Module):
+
+class NestedUNetNode(nn.Module):
     def __init__(self, inputs, outputs):
-        super(Conv2dLayer, self).__init__()
+        super().__init__()
 
         self.cfg = {
             'conv': {'padding': 1},
@@ -54,88 +56,133 @@ class Conv2dLayer(nn.Module):
 
     def forward(self, x):
         # x shape [B, C, H, W]
-        #print('Input:', x.shape)
+        # print('Input:', x.shape)
         x = self.down_conv(x)  # down shape [B, outputs_channel, H, W]
-        #print('Down:', x.shape)
+        # print('Down:', x.shape)
         return x
 
-class NestedUNet(nn.Module):
-    def __init__(self, inp_channels, nclasses, first_channels):
-        super(NestedUNet, self).__init__()
 
-        self.conv0_0 = Conv2dLayer(inp_channels, first_channels) # (inp_channel, 64)
-        self.conv1_0 = Conv2dLayer(first_channels, first_channels*2) # (64, 128)
-        self.conv2_0 = Conv2dLayer(first_channels*2, first_channels*4)
-        self.conv3_0 = Conv2dLayer(first_channels*4, first_channels*8)
-        self.conv4_0 = Conv2dLayer(first_channels*8, first_channels*16)
+class NestedUNetEncoderBlock(nn.Module):
+    def __init__(self, inputs, outputs):
+        super().__init__()
 
-        self.conv0_1 = Conv2dLayer(first_channels + first_channels*2, first_channels)
-        self.conv1_1 = Conv2dLayer(first_channels*2 + first_channels*4, first_channels*2)
-        self.conv2_1 = Conv2dLayer(first_channels*4 + first_channels*8, first_channels*4)
-        self.conv3_1 = Conv2dLayer(first_channels*8 + first_channels*16, first_channels*8)
+        self.cfg = {
+            'conv': {'padding': 1},
+        }
 
-        self.conv0_2 = Conv2dLayer(first_channels*2 + first_channels*2, first_channels)
-        self.conv1_2 = Conv2dLayer(first_channels*2*2 + first_channels*4, first_channels*2)
-        self.conv2_2 = Conv2dLayer(first_channels*2*2*2 + first_channels*8, first_channels*4)
-
-        self.conv0_3 = Conv2dLayer(first_channels*3 + first_channels*2, first_channels)
-        self.conv1_3 = Conv2dLayer(first_channels*2*3 + first_channels*4, first_channels*2)
-
-        self.conv0_4 = Conv2dLayer(first_channels*4 + first_channels*2, first_channels)
-
-        self.final = nn.Conv2d(first_channels, nclasses, kernel_size=1)
-
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-    
-    def interpolate(self, x, x_copy):
-        x = F.interpolate(x, size=(x_copy.size(2), x_copy.size(3)),
-                              mode='bilinear', align_corners=True)
-        return x
+        self.down_conv = nn.Sequential(
+            Conv2dBlock(inputs, outputs, kernel_size=3, cfg=self.cfg),
+            Conv2dBlock(outputs, outputs, kernel_size=3, cfg=self.cfg),
+        )
+        self.pool = nn.MaxPool2d(kernel_size=2)
 
     def forward(self, x):
-        x0_0 = self.conv0_0(x) # [B, inp_channel, H, W]
-        x1_0 = self.conv1_0(self.pool(x0_0)) # [B, inp_channel*2, H/2, W/2]
-        x2_0 = self.conv2_0(self.pool(x1_0)) # [B, inp_channel*4, H/4, W/4]
-        x3_0 = self.conv3_0(self.pool(x2_0)) # [B, inp_channel*8, H/8, W/8]
-        x4_0 = self.conv4_0(self.pool(x3_0)) # [B, inp_channel*16, H/16, W/16]
-        
+        # print('Input:', x.shape)
+        x = self.down_conv(x)
+        pool = self.pool(x)
+        # print('Down:', x.shape, pool.shape)
+        return x, pool
 
-        x0_1 = self.conv0_1(torch.cat([x0_0, 
-                            self.interpolate(self.up(x1_0), x0_0)], 1)) # [B, inp_channel, H, W]
-        x1_1 = self.conv1_1(torch.cat([x1_0, 
-                            self.interpolate(self.up(x2_0), x1_0)], 1)) # [B, inp_channel*2, H/2, W/2]
-        x2_1 = self.conv2_1(torch.cat([x2_0, 
-                            self.interpolate(self.up(x3_0), x2_0)], 1)) # [B, inp_channel*4, H/4, W/4]
-        x3_1 = self.conv3_1(torch.cat([x3_0, 
-                            self.interpolate(self.up(x4_0), x3_0)], 1)) # [B, inp_channel*8, H/8, W/8]
-        
-        x0_2 = self.conv0_2(torch.cat([x0_0, x0_1, 
-                            self.interpolate(self.up(x1_1), x0_0)], 1)) # [B, inp_channel, H, W]
-        x1_2 = self.conv1_2(torch.cat([x1_0, x1_1, 
-                            self.interpolate(self.up(x2_1), x1_0)], 1)) # [B, inp_channel*2, H/2, W/2]
-        x2_2 = self.conv2_2(torch.cat([x2_0, x2_1, 
-                            self.interpolate(self.up(x3_1), x2_0)], 1)) # [B, inp_channel*4, H/4, W/4]
-        
-        x0_3 = self.conv0_3(torch.cat([x0_0, x0_1, x0_2, 
-                            self.interpolate(self.up(x1_2), x0_0)], 1)) # [B, inp_channel, H, W]
-        x1_3 = self.conv1_3(torch.cat([x1_0, x1_1, x1_2, 
-                            self.interpolate(self.up(x2_2), x1_0)], 1)) # [B, inp_channel*2, H/2, W/2]
-        
-        x0_4 = self.conv0_4(torch.cat([x0_0, x0_1, x0_2, x0_3, 
-                            self.interpolate(self.up(x1_3), x0_0)], 1)) # [B, inp_channel, H, W]
-        
-        print("x0_4: ", x0_4.shape)
-        x = self.final(x0_4) 
-        
+
+class NestedUNetDecoderBlock(nn.Module):
+    def __init__(self, inputs, concats, outputs,
+                 upsample_method='deconv',
+                 sizematch_method='interpolate'):
+        super().__init__()
+
+        assert upsample_method in ['deconv', 'interpolate']
+        if upsample_method == 'deconv':
+            self.upsample = nn.ConvTranspose2d(
+                inputs, inputs, kernel_size=2, stride=2)
+        elif upsample_method == 'interpolate':
+            self.upsample = nn.Upsample(
+                scale_factor=2, mode='bilinear', align_corners=True)
+
+        assert sizematch_method in ['interpolate', 'pad']
+        if sizematch_method == 'interpolate':
+            self.sizematch = self.sizematch_interpolate
+        elif sizematch_method == 'pad':
+            self.sizematch = self.sizematch_pad
+
+        self.cfg = {
+            'conv': {'padding': 1},
+        }
+
+        self.conv = nn.Sequential(
+            Conv2dBlock(concats, outputs,
+                        kernel_size=3, cfg=self.cfg),
+            Conv2dBlock(outputs, outputs, kernel_size=3, cfg=self.cfg),
+        )
+
+    def sizematch_interpolate(self, source, target):
+        return F.interpolate(source, size=(target.size(2), target.size(3)),
+                             mode='bilinear', align_corners=True)
+
+    def sizematch_pad(self, source, target):
+        diffX = target.size()[3] - source.size()[3]
+        diffY = target.size()[2] - source.size()[2]
+        return F.pad(source, (diffX // 2, diffX - diffX // 2,
+                              diffY // 2, diffX - diffY // 2))
+
+    def forward(self, x, x_copy):
+        x = self.upsample(x)
+        x = self.sizematch(x, x_copy[0])
+        x = torch.cat([*x_copy, x], dim=1)
+        x = self.conv(x)
         return x
 
-if __name__ == "__main__":
-    dev = torch.device('cpu')
-    net = NestedUNet(3, 2, 64).to(dev)
-    
-    for iter_id in range(3):
-        inps = torch.rand(4, 3, 100, 100).to(dev)
-        outs = net(inps)
-       
 
+class NestedUNet(nn.Module):
+    def __init__(self, in_channels, nclasses, first_channels, depth):
+        super().__init__()
+        self.depth = depth
+        conv = [[NestedUNetEncoderBlock(in_channels, first_channels)]]
+        conv[0].extend([
+            NestedUNetEncoderBlock(first_channels*2**(d-1),
+                                   first_channels*2**d)
+            for d in range(1, self.depth)
+        ])
+        conv.extend([
+            [
+                NestedUNetDecoderBlock(first_channels*2**(i+1),
+                                       first_channels*(j + 2)*2**i,
+                                       first_channels*2**i)
+                for i in range(self.depth - j)
+            ]
+            for j in range(1, self.depth)
+        ])
+        self.conv = nn.ModuleList([nn.ModuleList(layer) for layer in conv])
+        self.final = nn.Conv2d(first_channels, nclasses, kernel_size=1)
+
+    def forward(self, x):
+        X = []
+        for conv in self.conv[0]:
+            ft, x = conv(x)
+            X.append([ft])
+        for j in range(1, self.depth):
+            for i in range(self.depth - j):
+                X[i].append(self.conv[j][i](X[i+1][j-1], X[i]))
+        x = self.final(X[0][-1])
+        return x
+
+
+if __name__ == "__main__":
+    from tqdm import tqdm
+
+    dev = torch.device('cuda')
+    net = NestedUNet(3, 2, 64, 2).to(dev)
+    print(net)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
+
+    tbar = tqdm(range(100))
+    for iter_id in tbar:
+        inps = torch.rand(4, 3, 100, 100).to(dev)
+        lbls = torch.randint(low=0, high=2, size=(4, 100, 100)).to(dev)
+
+        outs = net(inps)
+        loss = criterion(outs, lbls)
+        loss.backward()
+        optimizer.step()
+
+        tbar.set_description_str(f'({iter_id}) {loss.item():.6f}')

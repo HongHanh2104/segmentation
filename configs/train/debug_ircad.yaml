@@ -1,11 +1,12 @@
 id: Debug
 pretrained: null
 model:
-    name: ToyModel
+    name: NestedUNet
     args:
         nclasses: 2
         in_channels: 1
-        nfeatures: 128
+        first_channels: 64
+        depth: 5
 optimizer:
     name: Adam
     args:
@@ -37,7 +38,7 @@ dataset:
         args:
             root_path: data/3Dircadb1/test
         loader:
-            batch_size: 2
+            batch_size: 1
             shuffle: True
     val:
         name: IRCADSingle
