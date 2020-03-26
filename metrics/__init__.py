@@ -1,1 +1,1 @@
-from .segmentation import MeanIoU
+from .segmentation import MeanIoU, PixelAccuracy
