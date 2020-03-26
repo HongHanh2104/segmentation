@@ -16,6 +16,7 @@ from models import *
 from metrics import *
 
 import argparse
+import pprint
 
 
 def get_instance(config, **kwargs):
@@ -29,7 +30,7 @@ def get_instance(config, **kwargs):
 def train(config):
     assert config is not None, "Do not have config file!"
 
-    print(config)
+    pprint.PrettyPrinter(indent=2).pprint(config)
 
     dev_id = 'cuda:{}'.format(config['gpus']) \
         if torch.cuda.is_available() and config.get('gpus', None) is not None \
@@ -99,11 +100,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config')
     parser.add_argument('--gpus', default=None)
+    parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
 
     config_path = args.config
     config = yaml.load(open(config_path, 'r'), Loader=yaml.Loader)
     config['gpus'] = args.gpus
+    config['debug'] = args.debug
 
     train(config)

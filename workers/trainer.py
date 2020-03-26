@@ -36,6 +36,7 @@ class Trainer():
         # Get arguments
         self.nepochs = self.config['trainer']['nepochs']
         self.val_step = self.config['trainer']['log']['val_step']
+        self.debug = self.config['debug']
 
         # Instantiate global variables
         self.best_loss = np.inf
@@ -85,13 +86,12 @@ class Trainer():
         for m in self.metric.values():
             m.reset()
         self.model.train()
-        print('Training ........')
+        print('Training........')
         progress_bar = tqdm(dataloader)
         for i, (inp, lbl) in enumerate(progress_bar):
             # 1: Load img_inputs and labels
             inp = inp.to(self.device)
             lbl = lbl.to(self.device)
-            # label_imgs = label_imgs[1].to(self.device)
             # 2: Clear gradients from previous iteration
             self.optimizer.zero_grad()
             # 3: Get network outputs
@@ -113,8 +113,11 @@ class Trainer():
                 for m in self.metric.values():
                     value = m.calculate(outs, lbl)
                     m.update(value)
-        for k, m in self.metric.items():
-            print(f'{k}:')
+
+        print('+ Training result')
+        avg_loss = running_loss.value()[0]
+        print('Loss:', avg_loss)
+        for m in self.metric.values():
             m.summary()
 
     @torch.no_grad()
@@ -122,46 +125,40 @@ class Trainer():
         running_loss = meter.AverageValueMeter()
         for m in self.metric.values():
             m.reset()
+
         self.model.eval()
-        print('Validating ........')
+        print('Evaluating........')
         progress_bar = tqdm(dataloader)
         for i, (inp, lbl) in enumerate(progress_bar):
             # 1: Load inputs and labels
             inp = inp.to(self.device)
             lbl = lbl.to(self.device)
-
             # 2: Get network outputs
             outs = self.model(inp)
-
             # 3: Calculate the loss
             loss = self.criterion(outs, lbl)
-
             # 4: Update loss
             running_loss.add(loss.item())
-
             # 5: Update metric
             outs = outs.detach()
             lbl = lbl.detach()
-
             for m in self.metric.values():
                 value = m.calculate(outs, lbl)
                 m.update(value)
 
-        # Get average loss
+        print('+ Evaluation result')
         avg_loss = running_loss.value()[0]
-        print('Loss: ', avg_loss)
+        print('Loss:', avg_loss)
         self.val_loss.append(avg_loss)
         self.tsboard.update_loss('val', avg_loss, epoch)
 
         for k in self.metric.keys():
-            print(f'{k}:')
+            m = self.metric[k].value()
             self.metric[k].summary()
-            self.val_metric[k].append(self.metric[k].value())
-            self.tsboard.update_metric(
-                'val', k, self.metric[k].value(), epoch)
+            self.val_metric[k].append(m)
+            self.tsboard.update_metric('val', k, m, epoch)
 
     def train(self, train_dataloader, val_dataloader):
-        val_loss = 0
         for epoch in range(self.nepochs):
             print('\nEpoch {:>3d}'.format(epoch))
             print('-----------------------------------')
@@ -169,19 +166,20 @@ class Trainer():
             # 1: Training phase
             self.train_epoch(epoch=epoch, dataloader=train_dataloader)
 
-            # 2: Testing phase
+            print()
+
+            # 2: Evalutation phase
             if (epoch + 1) % self.val_step == 0:
+                # 2: Evaluating model
                 self.val_epoch(epoch, dataloader=val_dataloader)
-                print('-------------------------------')
+                print('-----------------------------------')
 
-            # 3: Learning rate scheduling
-            self.scheduler.step(self.val_loss[-1])
+                # 3: Learning rate scheduling
+                self.scheduler.step(self.val_loss[-1])
 
-            # 4: Saving checkpoints
-            if (epoch + 1) % self.val_step == 0:
-                # Get latest val loss here
-                val_loss = self.val_loss[-1]
-                val_metric = {k: m[-1] for k, m in self.val_metric.items()}
-                self.save_checkpoint(epoch, val_loss, val_metric)
-
-            # 5: Visualizing some examples
+                # 4: Saving checkpoints
+                if not self.debug:
+                    # Get latest val loss here
+                    val_loss = self.val_loss[-1]
+                    val_metric = {k: m[-1] for k, m in self.val_metric.items()}
+                    self.save_checkpoint(epoch, val_loss, val_metric)
