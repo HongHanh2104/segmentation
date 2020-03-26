@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 class Conv2dBlock(nn.Module):
     norm_map = {
         'none': nn.Identity,
@@ -39,7 +38,6 @@ class Conv2dBlock(nn.Module):
 
     def forward(self, x):
         return self.norm(self.activation(self.conv(x)))
-
 
 class EncoderBlock(nn.Module):
     def __init__(self, inputs, outputs):
@@ -81,7 +79,7 @@ class DecoderBlock(nn.Module):
         )
 
     def forward(self, x, x_copy):
-        #print('Input:', x.shape, x_copy.shape)
+        print('Input:', x.shape, x_copy.shape)
         x = self.up_transpose(x)
         #print('Up:', x.shape)
         if self.method == 'interpolate':
@@ -120,7 +118,6 @@ class MiddleBlock(nn.Module):
         x = self.conv(x)
         #print('Middle:', x.shape)
         return x
-
 
 class UNetEncoder(nn.Module):
     def __init__(self, in_channels, depth, first_channels):
@@ -161,6 +158,7 @@ class UNetDecoder(nn.Module):
     def forward(self, x, concats):
         for level, x_copy in zip(self.levels, concats):
             x = level(x, x_copy)
+            print(x.shape)
         return x
 
 
@@ -175,7 +173,7 @@ class UNet(nn.Module):
     def forward(self, x):
         x = self.encoder(x)
         features = self.encoder.get_features()
-
+        print(features[0])
         mid = self.middle_conv(x)
 
         x = self.decoder(mid, features)
@@ -184,18 +182,20 @@ class UNet(nn.Module):
 
 
 if __name__ == "__main__":
-    dev = torch.device('cuda')
+    dev = torch.device('cpu')
     net = UNet(2, 3, 4).to(dev)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
+    #criterion = nn.CrossEntropyLoss()
+    #optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
-    for iter_id in range(100):
+    for iter_id in range(1):
         inps = torch.rand(4, 3, 100, 100).to(dev)
         lbls = torch.randint(low=0, high=2, size=(4, 100, 100)).to(dev)
 
         outs = net(inps)
+        ''''
         loss = criterion(outs, lbls)
         loss.backward()
         optimizer.step()
 
         print(iter_id, loss.item())
+        '''
