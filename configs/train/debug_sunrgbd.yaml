@@ -1,11 +1,11 @@
 gpus: null
 pretrained: null
 model:
-    name: UNet
+    name: EfficientUNet
     args:
-        nclasses: 13
-        input_nchannels: 3
-        method: interpolate
+        nclasses: 14
+        in_channels: 3
+        version: b0
 optimizer:
     name: Adam
     args:
@@ -13,12 +13,12 @@ optimizer:
 loss:
     name: CrossEntropyLoss
     args:
-        ignore_index: -1
+        ignore_index: 0
 metric:
-    - name: IoU
+    - name: MeanIoU
       args:
-          nclasses: 13
-          ignore_index: -1
+          nclasses: 14
+          ignore_index: 0
 scheduler:
     name: ReduceLROnPlateau
     args:

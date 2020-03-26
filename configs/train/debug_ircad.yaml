@@ -1,11 +1,11 @@
 id: Debug
 pretrained: null
 model:
-    name: EfficientUNet
+    name: ToyModel
     args:
         nclasses: 2
         in_channels: 1
-        version: b0
+        nfeatures: 128
 optimizer:
     name: Adam
     args:
@@ -19,6 +19,9 @@ loss:
         # alpha: 0.25
 metric:
     - name: MeanIoU
+      args:
+          nclasses: 2
+    - name: PixelAccuracy
       args:
           nclasses: 2
 scheduler:

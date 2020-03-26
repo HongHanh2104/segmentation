@@ -52,7 +52,7 @@ class SUNRGBDDataset(data.Dataset):
         label_img_tf = tvtf.Compose([
         ])
         label_img = label_img_tf(label_img)
-        label_img = torch.Tensor(np.array(label_img)).long() - 1
+        label_img = torch.Tensor(np.array(label_img)).long()
 
         depth_img = Image.open(os.path.join(
             self.depth_img_path, str(int(img_id))) + '.png')

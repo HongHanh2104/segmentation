@@ -1,3 +1,4 @@
-from .unet import UNet
-from .effunet import EfficientUNet
+from .toymodel import ToyModel
+from .effunet import EfficientNet
 from .resunet import ResidUNet
+from .unet import UNet
