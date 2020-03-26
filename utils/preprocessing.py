@@ -28,9 +28,6 @@ def get_patients(path):
 
 def get_nii_image(img_path):
     image = sitk.ReadImage(img_path)
-    # if image.GetPixelID() > 4:
-    #     arr = sitk.GetArrayFromImage(image).astype(np.int16)
-    #     image = sitk.GetImageFromArray(arr)
 
     castFilter = sitk.CastImageFilter()
     castFilter.SetOutputPixelType(sitk.sitkInt16)

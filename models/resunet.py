@@ -150,8 +150,10 @@ class ResidUNet(nn.Module):
 
 
 if __name__ == "__main__":
-    dev = torch.device('cuda')
+    dev = torch.device('cpu')
     net = ResidUNet(1, 2).to(dev)
+    print(net)
+    """
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
@@ -165,3 +167,4 @@ if __name__ == "__main__":
         optimizer.step()
 
         print(iter_id, loss.item())
+    """
