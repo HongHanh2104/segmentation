@@ -63,5 +63,5 @@ target/
 data/*
 outputs/*
 vis/*
-run/*
+runs/*
 *.pth
