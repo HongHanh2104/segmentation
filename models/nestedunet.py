@@ -47,7 +47,7 @@ class NestedUNetEncoderBlock(nn.Module):
 
         self.cfg = {
             'conv': {'padding': 1},
-            'relu': {'inplace': True},
+            'activation': {'inplace': True},
         }
 
         self.down_conv = nn.Sequential(
@@ -86,7 +86,7 @@ class NestedUNetDecoderBlock(nn.Module):
 
         self.cfg = {
             'conv': {'padding': 1},
-            'relu': {'inplace': True},
+            'activation': {'inplace': True},
         }
 
         self.conv = nn.Sequential(
