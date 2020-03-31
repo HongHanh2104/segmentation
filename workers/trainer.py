@@ -35,7 +35,8 @@ class Trainer():
 
         # Get arguments
         self.nepochs = self.config['trainer']['nepochs']
-        self.val_step = self.config['trainer']['log']['val_step']
+        self.log_step = self.config['trainer']['log_step']
+        self.val_step = self.config['trainer']['val_step']
         self.debug = self.config['debug']
 
         # Instantiate global variables
@@ -105,8 +106,12 @@ class Trainer():
             with torch.no_grad():
                 # 7: Update loss
                 running_loss.add(loss.item())
-                self.tsboard.update_loss(
-                    'train', loss.item(), epoch * len(dataloader) + i)
+
+                if (i + 1) % self.log_step == 0 or (i + 1) == len(dataloader):
+                    self.tsboard.update_loss(
+                        'train', running_loss.value()[0], epoch * len(dataloader) + i)
+                    running_loss.reset()
+
                 # 8: Update metric
                 outs = outs.detach()
                 lbl = lbl.detach()

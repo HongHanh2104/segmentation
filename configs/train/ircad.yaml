@@ -1,11 +1,12 @@
-id: Debug
+id: NestedUNet3
 pretrained: null
 model:
-    name: EfficientUNet
+    name: NestedUNet
     args:
         nclasses: 2
         in_channels: 1
-        version: b0
+        first_channels: 64
+        depth: 3
 optimizer:
     name: Adam
     args:
@@ -48,5 +49,5 @@ dataset:
             batch_size: 1
 trainer:
     nepochs: 50
-    log:
-        val_step: 1
+    log_step: 1
+    val_step: 1

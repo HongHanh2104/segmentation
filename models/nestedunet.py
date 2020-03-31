@@ -41,33 +41,13 @@ class Conv2dBlock(nn.Module):
         return self.norm(self.activation(self.conv(x)))
 
 
-class NestedUNetNode(nn.Module):
-    def __init__(self, inputs, outputs):
-        super().__init__()
-
-        self.cfg = {
-            'conv': {'padding': 1},
-        }
-
-        self.down_conv = nn.Sequential(
-            Conv2dBlock(inputs, outputs, kernel_size=3, cfg=self.cfg),
-            Conv2dBlock(outputs, outputs, kernel_size=3, cfg=self.cfg),
-        )
-
-    def forward(self, x):
-        # x shape [B, C, H, W]
-        # print('Input:', x.shape)
-        x = self.down_conv(x)  # down shape [B, outputs_channel, H, W]
-        # print('Down:', x.shape)
-        return x
-
-
 class NestedUNetEncoderBlock(nn.Module):
     def __init__(self, inputs, outputs):
         super().__init__()
 
         self.cfg = {
             'conv': {'padding': 1},
+            'relu': {'inplace': True},
         }
 
         self.down_conv = nn.Sequential(
@@ -106,6 +86,7 @@ class NestedUNetDecoderBlock(nn.Module):
 
         self.cfg = {
             'conv': {'padding': 1},
+            'relu': {'inplace': True},
         }
 
         self.conv = nn.Sequential(

@@ -6,7 +6,7 @@ model:
         nclasses: 2
         in_channels: 1
         first_channels: 64
-        depth: 5
+        depth: 2
 optimizer:
     name: Adam
     args:
