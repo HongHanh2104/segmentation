@@ -84,6 +84,7 @@ class Trainer():
     def train_epoch(self, epoch, dataloader):
         # 0: Record loss during training process
         running_loss = meter.AverageValueMeter()
+        total_loss = meter.AverageValueMeter()
         for m in self.metric.values():
             m.reset()
         self.model.train()
@@ -106,6 +107,7 @@ class Trainer():
             with torch.no_grad():
                 # 7: Update loss
                 running_loss.add(loss.item())
+                total_loss.add(loss.item())
 
                 if (i + 1) % self.log_step == 0 or (i + 1) == len(dataloader):
                     self.tsboard.update_loss(
@@ -120,7 +122,7 @@ class Trainer():
                     m.update(value)
 
         print('+ Training result')
-        avg_loss = running_loss.value()[0]
+        avg_loss = total_loss.value()[0]
         print('Loss:', avg_loss)
         for m in self.metric.values():
             m.summary()
