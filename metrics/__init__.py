@@ -1,1 +1,1 @@
-from .segmentation import MeanIoU, PixelAccuracy
+from .segmentation import MeanIoU, PixelAccuracy, DiceScore
