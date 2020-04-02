@@ -35,10 +35,8 @@ class Conv2dBlock(nn.Module):
         self.activation = Conv2dBlock.activation_map[activation](
             **activation_cfg)
 
-        self.skipable = in_channels == out_channels
-
     def forward(self, x):
-        return self.norm(self.activation(self.conv(x)))
+        return self.activation(self.norm(self.conv(x)))
 
 
 class EncoderBlock(nn.Module):
@@ -207,7 +205,7 @@ if __name__ == "__main__":
     from tqdm import tqdm
 
     dev = torch.device('cuda')
-    net = UNet(2, 1, 4).to(dev)
+    net = UNet(2, 1, 64, 4).to(dev)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 

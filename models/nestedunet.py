@@ -35,10 +35,8 @@ class Conv2dBlock(nn.Module):
         self.activation = Conv2dBlock.activation_map[activation](
             **activation_cfg)
 
-        self.skipable = in_channels == out_channels
-
     def forward(self, x):
-        return self.norm(self.activation(self.conv(x)))
+        return self.activation(self.norm(self.conv(x)))
 
 
 class NestedUNetEncoderBlock(nn.Module):
