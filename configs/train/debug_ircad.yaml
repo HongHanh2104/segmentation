@@ -1,7 +1,7 @@
 id: Debug
 pretrained: null
 model:
-    name: NestedUNet
+    name: UNet
     args:
         nclasses: 2
         in_channels: 1
@@ -25,6 +25,9 @@ metric:
     - name: PixelAccuracy
       args:
           nclasses: 2
+    # - name: DiceScore
+    #   args:
+    #       nclasses: 2
 scheduler:
     name: ReduceLROnPlateau
     args:
@@ -38,7 +41,7 @@ dataset:
         args:
             root_path: data/3Dircadb1/test
         loader:
-            batch_size: 1
+            batch_size: 2
             shuffle: True
     val:
         name: IRCADSingle
@@ -49,5 +52,5 @@ dataset:
             batch_size: 1
 trainer:
     nepochs: 50
-    log:
-        val_step: 1
+    val_step: 1
+    log_step: 1

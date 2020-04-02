@@ -3,28 +3,15 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils import data
-from torch.optim import SGD, Adam, RMSprop
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 from torchnet import meter
 
 from workers.trainer import Trainer
 from utils.random_seed import set_seed
-from losses import *
-from datasets import *
-from models import *
-from metrics import *
+from utils.getter import get_instance
 
 import argparse
 import pprint
-
-
-def get_instance(config, **kwargs):
-    assert 'name' in config
-    config.setdefault('args', {})
-    if config['args'] is None:
-        config['args'] = {}
-    return globals()[config['name']](**config['args'], **kwargs)
 
 
 def train(config):
