@@ -50,7 +50,7 @@ class PixelAccuracy(Metrics):
 
 
 class MeanIoU(Metrics):
-    def __init__(self, nclasses, ignore_index=None):
+    def __init__(self, nclasses, ignore_index=None, eps=1e-6):
         super().__init__()
         assert nclasses > 0
 
@@ -60,6 +60,7 @@ class MeanIoU(Metrics):
             self.nclasses += 1
             self.pred_fn = binary_prediction
         self.ignore_index = ignore_index
+        self.eps = eps
         self.reset()
 
     def calculate(self, output, target):
@@ -76,7 +77,7 @@ class MeanIoU(Metrics):
         target = F.one_hot(target, self.nclasses).bool()
         intersection = (prediction & target).sum((-3, -2))
         union = (prediction | target).sum((-3, -2))
-        ious = (intersection.float() + 1e-6) / (union.float() + 1e-6)
+        ious = (intersection.float() + self.eps) / (union.float() + self.eps)
 
         return ious.cpu()
 
