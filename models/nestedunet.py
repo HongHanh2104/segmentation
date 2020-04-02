@@ -151,15 +151,15 @@ if __name__ == "__main__":
     from tqdm import tqdm
 
     dev = torch.device('cuda')
-    net = NestedUNet(3, 2, 64, 2).to(dev)
+    net = NestedUNet(1, 2, 64, 4).to(dev)
     print(net)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
     tbar = tqdm(range(100))
     for iter_id in tbar:
-        inps = torch.rand(4, 3, 100, 100).to(dev)
-        lbls = torch.randint(low=0, high=2, size=(4, 100, 100)).to(dev)
+        inps = torch.rand(3, 1, 256, 256).to(dev)
+        lbls = torch.randint(low=0, high=2, size=(3, 256, 256)).to(dev)
 
         outs = net(inps)
         loss = criterion(outs, lbls)

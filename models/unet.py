@@ -46,7 +46,12 @@ class EncoderBlock(nn.Module):
         super(EncoderBlock, self).__init__()
 
         self.cfg = {
-            'conv': {'padding': 1},
+            'conv': {
+                'padding': 1,
+            },
+            'activation': {
+                'inplace': True,
+            },
         }
 
         self.down_conv = nn.Sequential(
@@ -83,7 +88,12 @@ class DecoderBlock(nn.Module):
             self.sizematch = self.sizematch_pad
 
         self.cfg = {
-            'conv': {'padding': 1},
+            'conv': {
+                'padding': 1,
+            },
+            'activation': {
+                'inplace': True,
+            },
         }
 
         self.conv = nn.Sequential(
@@ -113,7 +123,12 @@ class MiddleBlock(nn.Module):
     def __init__(self, inputs, outputs):
         super(MiddleBlock, self).__init__()
         self.cfg = {
-            'conv': {'padding': 1},
+            'conv': {
+                'padding': 1,
+            },
+            'activation': {
+                'inplace': True,
+            },
         }
 
         self.conv = nn.Sequential(
@@ -170,12 +185,13 @@ class UNetDecoder(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, nclasses, in_channels, depth):
+    def __init__(self, nclasses, in_channels, first_channels, depth):
         super(UNet, self).__init__()
-        self.encoder = UNetEncoder(in_channels, depth, 64)
-        self.middle_conv = MiddleBlock(64 * 2**(depth - 1), 64 * 2**depth)
-        self.decoder = UNetDecoder(depth, 64 * 2**depth)
-        self.final_conv = nn.Conv2d(64, nclasses, kernel_size=1)
+        self.encoder = UNetEncoder(in_channels, depth, first_channels)
+        self.middle_conv = MiddleBlock(first_channels * 2**(depth - 1),
+                                       first_channels * 2**depth)
+        self.decoder = UNetDecoder(depth, first_channels * 2**depth)
+        self.final_conv = nn.Conv2d(first_channels, nclasses, kernel_size=1)
 
     def forward(self, x):
         x = self.encoder(x)
@@ -191,14 +207,14 @@ if __name__ == "__main__":
     from tqdm import tqdm
 
     dev = torch.device('cuda')
-    net = UNet(2, 3, 4).to(dev)
+    net = UNet(2, 1, 4).to(dev)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
 
     tbar = tqdm(range(100))
     for iter_id in tbar:
-        inps = torch.rand(4, 3, 100, 100).to(dev)
-        lbls = torch.randint(low=0, high=2, size=(4, 100, 100)).to(dev)
+        inps = torch.rand(8, 1, 224, 224).to(dev)
+        lbls = torch.randint(low=0, high=2, size=(8, 224, 224)).to(dev)
 
         outs = net(inps)
 
