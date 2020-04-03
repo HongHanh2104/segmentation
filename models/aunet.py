@@ -1,7 +1,6 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
+import torch 
+import torch.nn as nn 
+import torch.nn.functional as F 
 
 class Conv2dBlock(nn.Module):
     norm_map = {
@@ -34,16 +33,48 @@ class Conv2dBlock(nn.Module):
             'activation', None) is None else cfg['activation']
         self.activation = Conv2dBlock.activation_map[activation](
             **activation_cfg)
-
+    
     def forward(self, x):
         return self.activation(self.norm(self.conv(x)))
 
+class AttentionBlock(nn.Module):
+    def __init__(self, F_g, F_l, F_int):
+        super().__init__()
+        cfg = {
+            'conv': {
+                'padding': 0,
+            },
+            'activation': {
+                'inplace': True,
+            },
+        }
 
-class RecurrentBlock(nn.Module):
-    def __init__(self, channels, t):
+        self.W_g = Conv2dBlock(F_g, F_int, kernel_size=1,
+                               norm='none', activation='none', cfg=cfg)
+
+        self.W_x = Conv2dBlock(F_l, F_int, kernel_size=1,
+                                norm='none', activation='none', cfg=cfg)
+
+        self.relu = nn.ReLU(inplace=True)
+
+        self.phi = Conv2dBlock(F_int, 1, kernel_size=1,
+                                norm='none', activation='none', cfg=cfg)
+
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, g, x):
+        g_1 = self.W_g(g)
+        x_1 = self.W_x(x)
+        phi = self.relu(g_1 + x_1)
+        phi = self.phi(phi)
+        sigmoid = self.sigmoid(phi)
+        return x*sigmoid
+
+class EncoderBlock(nn.Module):
+    def __init__(self, inputs, outputs):
         super().__init__()
 
-        cfg = {
+        self.cfg = {
             'conv': {
                 'padding': 1,
             },
@@ -52,54 +83,31 @@ class RecurrentBlock(nn.Module):
             },
         }
 
-        self.t = t
-        self.conv_f = Conv2dBlock(channels, channels,
-                                  kernel_size=3, cfg=cfg)
-        self.conv_r = Conv2dBlock(channels, channels,
-                                  kernel_size=3, cfg=cfg)
-
-    def forward(self, x):
-        r = self.conv_f(x)
-        for _ in range(self.t):
-            x = self.conv_r(x) + r
-        return x
-
-
-class RRCNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, t):
-        super().__init__()
-
-        self.conv_1x1 = nn.Conv2d(in_channels, out_channels,
-                                  kernel_size=1, stride=1, padding=0)
-
-        self.RCNN = nn.Sequential(
-            RecurrentBlock(out_channels, t),
-            RecurrentBlock(out_channels, t)
+        self.down_conv = nn.Sequential(
+            Conv2dBlock(inputs, outputs, kernel_size=3, cfg=self.cfg),
+            Conv2dBlock(outputs, outputs, kernel_size=3, cfg=self.cfg),
         )
 
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+    
     def forward(self, x):
-        x1 = self.conv_1x1(x)
-        x2 = self.RCNN(x1)
-        return x1 + x2
-
-
-class R2UNetEncoderBlock(nn.Module):
-    def __init__(self, inputs, outputs, t):
-        super().__init__()
-        self.conv = RRCNNBlock(inputs, outputs, t)
-        self.pool = nn.MaxPool2d(kernel_size=2)
-
-    def forward(self, x):
-        x = self.conv(x)
+        x = self.down_conv(x)
         pool = self.pool(x)
         return x, pool
 
-
-class R2UNetDecoderBlock(nn.Module):
-    def __init__(self, inputs, outputs, t,
-                 upsample_method='deconv',
-                 sizematch_method='interpolate'):
+class DecoderBlock(nn.Module):
+    def __init__(self, inputs, outputs,
+                upsample_method='deconv', sizematch_method='interpolate'):
         super().__init__()
+
+        self.cfg = {
+            'conv': {
+                'padding': 1,
+            },
+            'activation': {
+                'inplace': True,
+            },
+        }
 
         assert upsample_method in ['deconv', 'interpolate']
         if upsample_method == 'deconv':
@@ -110,15 +118,20 @@ class R2UNetDecoderBlock(nn.Module):
             self.upsample = nn.Upsample(
                 scale_factor=2, mode='bilinear', align_corners=True
             )
-
+        
         assert sizematch_method in ['interpolate', 'pad']
         if sizematch_method == 'interpolate':
             self.sizematch = self.sizematch_interpolate
         elif sizematch_method == 'pad':
             self.sizematch = self.sizematch_pad
+        
+        self.up_conv = nn.Sequential(
+            Conv2dBlock(inputs, outputs, kernel_size=3, cfg=self.cfg),
+            Conv2dBlock(outputs, outputs, kernel_size=3, cfg=self.cfg)
+        )
 
-        self.conv = RRCNNBlock(inputs, outputs, t)
-
+        self.att = AttentionBlock(outputs, outputs, outputs//2)
+    
     def sizematch_interpolate(self, source, target):
         return F.interpolate(source, size=(target.size(2), target.size(3)),
                              mode='bilinear', align_corners=True)
@@ -130,30 +143,43 @@ class R2UNetDecoderBlock(nn.Module):
                               diffY // 2, diffX - diffY // 2))
 
     def forward(self, x, x_copy):
-        x = self.upsample(x)
-        x = self.sizematch(x, x_copy)
-        x = torch.cat([x_copy, x], dim=1)
-        x = self.conv(x)
-        return x
+        g = self.upsample(x)
+        g = self.sizematch(g, x_copy)
+        x_copy = self.att(g=g, x=x_copy)
+        print(x_copy.shape)
+        g = torch.cat([x_copy, g], dim=1)
+        g = self.up_conv(g)
+        #print(g.shape)
+        return g
 
-
-class R2UNetMiddle(nn.Module):
-    def __init__(self, in_channels, out_channels, t):
+class AUNetMiddle(nn.Module):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv = RRCNNBlock(in_channels, out_channels, t)
+        
+        cfg = {
+            'conv': {
+                'padding': 1,
+            },
+            'activation': {
+                'inplace': True,
+            },
+        }
+
+        self.conv = Conv2dBlock(in_channels, out_channels, kernel_size=3, cfg=cfg)
 
     def forward(self, x):
         x = self.conv(x)
         return x
 
-
-class R2UNetEncoder(nn.Module):
-    def __init__(self, in_channels, depth, first_channels, t):
+class AUNetEncoder(nn.Module):
+    def __init__(self, in_channels, depth, first_channels):
         super().__init__()
-        levels = [R2UNetEncoderBlock(in_channels, first_channels, t)]
-        levels += [R2UNetEncoderBlock(first_channels * 2**i,
-                                      first_channels * 2**(i+1), t)
+
+        levels = [EncoderBlock(in_channels, first_channels)]
+        levels += [EncoderBlock(first_channels * 2**i,
+                                first_channels * 2**(i+1))
                    for i in range(depth-1)]
+
         self.depth = depth
         self.levels = nn.ModuleList(levels)
         self.features = []
@@ -168,13 +194,11 @@ class R2UNetEncoder(nn.Module):
     def get_features(self):
         return self.features[::-1]
 
-
-class R2UNetDecoder(nn.Module):
-    def __init__(self, depth, first_channels, t):
+class AUNetDecoder(nn.Module):
+    def __init__(self, depth, first_channels):
         super().__init__()
-
-        levels = [R2UNetDecoderBlock(first_channels // 2**i,
-                                     first_channels // 2**(i+1), t)
+        levels = [DecoderBlock(first_channels // 2**i,
+                                     first_channels // 2**(i+1))
                   for i in range(depth)]
         self.depth = depth
         self.levels = nn.ModuleList(levels)
@@ -184,13 +208,12 @@ class R2UNetDecoder(nn.Module):
             x = level(x, x_copy)
         return x
 
-
-class R2UNet(nn.Module):
-    def __init__(self, nclasses, in_channels, depth, t):
+class AUNet(nn.Module):
+    def __init__(self, nclasses, in_channels, depth):
         super().__init__()
-        self.encoder = R2UNetEncoder(in_channels, depth, 64, t)
-        self.middle_conv = R2UNetMiddle(64*2**(depth-1), 64*2**depth, t)
-        self.decoder = R2UNetDecoder(depth, 64*2**depth, t)
+        self.encoder = AUNetEncoder(in_channels, depth, 64)
+        self.middle_conv = AUNetMiddle(64*2**(depth-1), 64*2**depth)
+        self.decoder = AUNetDecoder(depth, 64*2**depth)
         self.final_conv = nn.Conv2d(64, nclasses, kernel_size=1)
 
     def forward(self, x):
@@ -201,27 +224,13 @@ class R2UNet(nn.Module):
         x = self.final_conv(x)
         return x
 
-
 if __name__ == "__main__":
     from tqdm import tqdm
     dev = torch.device('cpu')
-    #net = R2UNet(2, 3, 4, 2).to(dev)
-    net = R2UNetEncoder(3, 4, 64, 2)
-    print(net)
-    '''
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
-
-    tbar = tqdm(range(100))
-    for i in tbar:
+    net = AUNet(2, 3, 4)
+    tbar = tqdm(range(2))
+    for iter_id in tbar:
         inps = torch.rand(4, 3, 100, 100).to(dev)
         lbls = torch.randint(low=0, high=2, size=(4, 100, 100)).to(dev)
 
         outs = net(inps)
-
-        loss = criterion(outs, lbls)
-        loss.backward()
-        optimizer.step()
-
-        tbar.set_description_str(f'{i}: {loss.item()}')
-    '''
